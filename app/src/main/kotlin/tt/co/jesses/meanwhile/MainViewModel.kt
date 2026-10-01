@@ -1,6 +1,7 @@
 package tt.co.jesses.meanwhile
 
 import android.app.Application
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,7 +18,10 @@ import tt.co.jesses.meanwhile.core.Article
 import tt.co.jesses.meanwhile.core.CachingNewsSource
 import tt.co.jesses.meanwhile.core.GdeltNewsSource
 import tt.co.jesses.meanwhile.core.LatLon
+import tt.co.jesses.meanwhile.core.MarineConditions
+import tt.co.jesses.meanwhile.core.MarineSource
 import tt.co.jesses.meanwhile.core.NewsSource
+import tt.co.jesses.meanwhile.core.OpenMeteoMarineSource
 import tt.co.jesses.meanwhile.core.Trace
 import tt.co.jesses.meanwhile.core.antipode
 import tt.co.jesses.meanwhile.core.capPerDomain
@@ -27,13 +31,19 @@ import kotlin.coroutines.cancellation.CancellationException
 
 enum class Status { Idle, Loading, Ready, Error }
 
+/** What to show when the antipode is open water: headlines from the nearest land, or the sea itself. */
+enum class ViewMode { Land, Ocean }
+
 data class UiState(
     val status: Status = Status.Idle,
+    val mode: ViewMode = ViewMode.Land,
     /** Where the user is, as a label ("Your location" or a searched place). */
     val originLabel: String? = null,
     val antipode: LatLon? = null,
     val country: ResolvedCountry? = null,
     val articles: List<Article> = emptyList(),
+    /** Sea conditions at the antipode, set in [ViewMode.Ocean]; null if the source had none. */
+    val marine: MarineConditions? = null,
     /** GDELT window the articles came from: "24h", or "7d" when the last day was thin. */
     val window: String = "24h",
     val searchResults: List<NamedPlace> = emptyList(),
@@ -52,21 +62,22 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val geocoding = Geocoding(app)
     private val resolver = AntipodeResolver(geocoding)
     private val location = LocationSource(app)
+    private val http = HttpClient(OkHttp) {
+        // GDELT can be slow; give it room instead of cutting it off mid-response.
+        install(HttpTimeout) {
+            connectTimeoutMillis = 15_000
+            socketTimeoutMillis = 60_000
+            requestTimeoutMillis = 90_000
+        }
+    }
     private val news: NewsSource = CachingNewsSource(
-        delegate = GdeltNewsSource(
-            HttpClient(OkHttp) {
-                // GDELT can be slow; give it room instead of cutting it off mid-response.
-                install(HttpTimeout) {
-                    connectTimeoutMillis = 15_000
-                    socketTimeoutMillis = 60_000
-                    requestTimeoutMillis = 90_000
-                }
-            },
-        ),
+        delegate = GdeltNewsSource(http),
         store = FileNewsCacheStore(File(app.cacheDir, "news")),
     )
+    private val marine: MarineSource = OpenMeteoMarineSource(http)
+    private val prefs = app.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
-    private val _state = MutableStateFlow(UiState())
+    private val _state = MutableStateFlow(UiState(mode = loadMode()))
     val state: StateFlow<UiState> = _state.asStateFlow()
 
     private var loadJob: Job? = null
@@ -99,6 +110,17 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         loadJob = viewModelScope.launch { loadFor(here, originLabel) }
     }
 
+    /** Remembered across launches; only matters when the antipode is open water. */
+    fun setMode(mode: ViewMode) {
+        if (mode == _state.value.mode) return
+        prefs.edit().putString(KEY_MODE, mode.name).apply()
+        _state.update { it.copy(mode = mode) }
+        refresh()
+    }
+
+    private fun loadMode(): ViewMode =
+        runCatching { ViewMode.valueOf(prefs.getString(KEY_MODE, null) ?: ViewMode.Land.name) }.getOrDefault(ViewMode.Land)
+
     fun search(query: String) {
         if (query.isBlank()) return
         viewModelScope.launch {
@@ -125,6 +147,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 antipode = target,
                 country = null,
                 articles = emptyList(),
+                marine = null,
                 message = null,
                 progress = "Looking for land on the other side of the world…",
             )
@@ -138,6 +161,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     return
                 }
                 Log.d(TAG, "load: ${country.name} (iso=${country.iso}, fips=${country.fips}, ${country.distanceKm.toInt()} km) after ${(System.nanoTime() - loadStart) / 1_000_000} ms")
+                if (_state.value.mode == ViewMode.Ocean && country.distanceKm > 0) {
+                    // Open water, and the user wants the sea: no headlines needed, so no GDELT call.
+                    _state.update { it.copy(country = country, progress = "Reading the sea…") }
+                    val conditions = marine.conditions(target)
+                    Log.d(TAG, "load: sea conditions ${if (conditions == null) "unavailable" else "ok"}, ${(System.nanoTime() - loadStart) / 1_000_000} ms in")
+                    _state.update { it.copy(status = Status.Ready, marine = conditions) }
+                    return
+                }
                 _state.update {
                     it.copy(country = country, progress = "Fetching headlines from ${country.name}… the first load can take up to 30 seconds.")
                 }
@@ -171,5 +202,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         const val MAX_PER_DOMAIN = 8
         const val MAX_ARTICLES = 100
         const val MAX_COUNTRY_ATTEMPTS = 3
+        const val KEY_MODE = "mode"
     }
 }

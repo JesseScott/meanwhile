@@ -51,6 +51,7 @@ class MainActivity : ComponentActivity() {
                             onRefresh = viewModel::refresh,
                             onSearch = viewModel::search,
                             onPickPlace = viewModel::usePlace,
+                            onSetMode = viewModel::setMode,
                         )
                     }
                 }

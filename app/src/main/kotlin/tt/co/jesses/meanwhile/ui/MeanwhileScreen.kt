@@ -21,6 +21,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,15 +40,32 @@ import tt.co.jesses.meanwhile.NamedPlace
 import tt.co.jesses.meanwhile.ResolvedCountry
 import tt.co.jesses.meanwhile.Status
 import tt.co.jesses.meanwhile.UiState
+import tt.co.jesses.meanwhile.ViewMode
 import tt.co.jesses.meanwhile.core.Article
+import tt.co.jesses.meanwhile.core.DayPhase
 import tt.co.jesses.meanwhile.core.LatLon
+import tt.co.jesses.meanwhile.core.MarineConditions
 import tt.co.jesses.meanwhile.core.approxUtcOffsetHours
+import tt.co.jesses.meanwhile.core.compassPoint
+import tt.co.jesses.meanwhile.core.dayPhaseOf
 import tt.co.jesses.meanwhile.core.flagEmoji
+import tt.co.jesses.meanwhile.core.oceanNameAt
+import tt.co.jesses.meanwhile.core.seaState
 import tt.co.jesses.meanwhile.core.seenInstant
+import tt.co.jesses.meanwhile.core.sunAltitudeDeg
+import java.time.Instant
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.math.abs
 import kotlin.math.roundToInt
+
+/** True when the antipode is open water and the user can pick between nearest land and the sea. */
+private val UiState.antipodeIsWater: Boolean
+    get() = (country?.distanceKm ?: 0.0) > 0
+
+private val UiState.showingOcean: Boolean
+    get() = mode == ViewMode.Ocean && antipodeIsWater
 
 @Composable
 fun MeanwhileScreen(
@@ -54,9 +74,10 @@ fun MeanwhileScreen(
     onRefresh: () -> Unit,
     onSearch: (String) -> Unit,
     onPickPlace: (NamedPlace) -> Unit,
+    onSetMode: (ViewMode) -> Unit,
 ) {
     Column(Modifier.fillMaxSize()) {
-        // Everything above the results stays put; only the headlines scroll.
+        // Everything above the results stays put; only the results scroll.
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -64,6 +85,7 @@ fun MeanwhileScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Header(state)
+            if (state.antipodeIsWater) ModeSwitch(state.mode, onSetMode)
             Controls(state, onUseLocation, onRefresh, onSearch)
             state.searchResults.forEach { place ->
                 TextButton(onClick = { onPickPlace(place) }, modifier = Modifier.fillMaxWidth()) {
@@ -80,14 +102,32 @@ fun MeanwhileScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (state.status == Status.Ready) {
-                if (state.window == "7d") {
-                    item { Text("Quiet there today, so this shows the last week.", style = MaterialTheme.typography.bodySmall) }
+                if (state.showingOcean) {
+                    item { OceanCard(state) }
+                } else {
+                    if (state.window == "7d") {
+                        item { Text("Quiet there today, so this shows the last week.", style = MaterialTheme.typography.bodySmall) }
+                    }
+                    if (state.articles.isEmpty()) {
+                        item { Text("No headlines found for ${state.country?.name ?: "that region"}.") }
+                    }
+                    items(state.articles, key = { it.url }) { ArticleRow(it) }
                 }
-                if (state.articles.isEmpty()) {
-                    item { Text("No headlines found for ${state.country?.name ?: "that region"}.") }
-                }
-                items(state.articles, key = { it.url }) { ArticleRow(it) }
             }
+        }
+    }
+}
+
+@Composable
+private fun ModeSwitch(mode: ViewMode, onSetMode: (ViewMode) -> Unit) {
+    val options = listOf(ViewMode.Land to "Nearest land", ViewMode.Ocean to "Open ocean")
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        options.forEachIndexed { index, (value, label) ->
+            SegmentedButton(
+                selected = mode == value,
+                onClick = { onSetMode(value) },
+                shape = SegmentedButtonDefaults.itemShape(index, options.size),
+            ) { Text(label) }
         }
     }
 }
@@ -143,13 +183,18 @@ private fun Header(state: UiState) {
         val country = state.country
         val antipode = state.antipode
         if (country != null && antipode != null) {
-            Text("${flagEmoji(country.iso)} ${country.name}", style = MaterialTheme.typography.titleLarge)
+            val ocean = state.showingOcean
+            val title = if (ocean) "🌊 ${oceanNameAt(antipode)}" else "${flagEmoji(country.iso)} ${country.name}"
+            Text(title, style = MaterialTheme.typography.titleLarge)
             Text(
                 "Opposite ${state.originLabel ?: "you"}. It's about ${localTimeThere(antipode)} there.",
                 style = MaterialTheme.typography.bodyMedium,
             )
             if (country.distanceKm > 0) {
-                Text(closestLandNote(country), style = MaterialTheme.typography.bodySmall)
+                Text(
+                    if (ocean) nearestLandNote(country) else closestLandNote(country),
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
         }
     }
@@ -158,9 +203,73 @@ private fun Header(state: UiState) {
 private fun closestLandNote(country: ResolvedCountry): String =
     "Your antipode is open water. Closest land found: ${country.name}, about ${country.distanceKm.roundToInt()} km away."
 
+private fun nearestLandNote(country: ResolvedCountry): String =
+    "Nearest land: ${country.name}, about ${country.distanceKm.roundToInt()} km away."
+
 private fun localTimeThere(antipode: LatLon): String {
     val offset = ZoneOffset.ofHours(approxUtcOffsetHours(antipode.lon))
     return ZonedDateTime.now(offset).format(DateTimeFormatter.ofPattern("h:mm a"))
+}
+
+private fun sunDescription(antipode: LatLon): String {
+    val altitude = sunAltitudeDeg(antipode, Instant.now())
+    val degrees = abs(altitude).roundToInt()
+    return when (dayPhaseOf(altitude)) {
+        DayPhase.Day -> "Daytime. The sun is $degrees° above the horizon."
+        DayPhase.Twilight -> "Twilight. The sun is just $degrees° below the horizon."
+        DayPhase.Night -> "Night. The sun is $degrees° below the horizon."
+    }
+}
+
+@Composable
+private fun OceanCard(state: UiState) {
+    val antipode = state.antipode ?: return
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Right now, on the other side", style = MaterialTheme.typography.titleMedium)
+            Text(sunDescription(antipode), style = MaterialTheme.typography.bodyMedium)
+            HorizontalDivider()
+            val marine = state.marine
+            if (marine == null) {
+                Text("No sea data for this spot right now.", style = MaterialTheme.typography.bodyMedium)
+            } else {
+                MarineRows(marine)
+            }
+            Text(
+                "Sea data: Open-Meteo.com Marine API (CC BY 4.0), from DWD and other weather services.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun MarineRows(marine: MarineConditions) {
+    marine.waveHeightM?.let { height ->
+        val detail = listOfNotNull(
+            seaState(height),
+            marine.waveDirectionDeg?.let { "from the ${compassPoint(it)}" },
+            marine.wavePeriodS?.let { "every ${it.roundToInt()} s" },
+        ).joinToString(", ")
+        Fact("Waves", "${"%.1f".format(height)} m", detail)
+    }
+    marine.swellHeightM?.let { Fact("Swell", "${"%.1f".format(it)} m", null) }
+    marine.seaTempC?.let { Fact("Water temperature", "${"%.1f".format(it)} °C", null) }
+    marine.currentKmh?.let { Fact("Current", "${"%.1f".format(it)} km/h", null) }
+}
+
+@Composable
+private fun Fact(label: String, value: String, detail: String?) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(label, style = MaterialTheme.typography.bodyMedium)
+            Text(value, style = MaterialTheme.typography.titleMedium)
+        }
+        if (detail != null) {
+            Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
 }
 
 @Composable
