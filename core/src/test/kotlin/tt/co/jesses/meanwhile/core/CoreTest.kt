@@ -128,6 +128,22 @@ class NewsTest {
     }
 
     @Test
+    fun blocklistDropsMisfiledOutletsAndSubdomainsForThatCountryOnly() {
+        fun article(domain: String) = Article(url = "https://$domain/x", title = domain, domain = domain)
+        val articles = listOf(article("storm.mg"), article("www.storm.mg"), article("newsmada.com"), article("notstorm.mg"))
+        val blocked = mapOf("MA" to setOf("storm.mg"))
+
+        assertEquals(listOf("newsmada.com", "notstorm.mg"), articles.withoutBlocked("MA", blocked).map { it.domain })
+        assertEquals(articles, articles.withoutBlocked("TW", blocked))
+    }
+
+    @Test
+    fun defaultBlocklistCoversStormMg() {
+        val articles = listOf(Article(url = "https://storm.mg/1", title = "t", domain = "storm.mg"))
+        assertEquals(emptyList(), articles.withoutBlocked("MA"))
+    }
+
+    @Test
     fun cacheServesFreshEntriesAndSurvivesUpstreamFailure() = runTest {
         var now = 0L
         var calls = 0

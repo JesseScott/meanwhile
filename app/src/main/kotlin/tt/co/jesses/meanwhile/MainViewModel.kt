@@ -21,6 +21,7 @@ import tt.co.jesses.meanwhile.core.NewsSource
 import tt.co.jesses.meanwhile.core.Trace
 import tt.co.jesses.meanwhile.core.antipode
 import tt.co.jesses.meanwhile.core.capPerDomain
+import tt.co.jesses.meanwhile.core.withoutBlocked
 import java.io.File
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -141,12 +142,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     it.copy(country = country, progress = "Fetching headlines from ${country.name}… the first load can take up to 30 seconds.")
                 }
                 val result = news.headlines(country.fips)
-                Log.d(TAG, "load: ${country.name} gave ${result.articles.size} articles (${result.window}), ${(System.nanoTime() - loadStart) / 1_000_000} ms in")
-                if (result.articles.isNotEmpty()) {
+                // Filtered here, not at fetch time, so cached results and newly added entries are covered too.
+                val articles = result.articles.withoutBlocked(country.fips)
+                Log.d(TAG, "load: ${country.name} gave ${result.articles.size} articles (${articles.size} after blocklist, ${result.window}), ${(System.nanoTime() - loadStart) / 1_000_000} ms in")
+                if (articles.isNotEmpty()) {
                     _state.update {
                         it.copy(
                             status = Status.Ready,
-                            articles = result.articles.capPerDomain(MAX_PER_DOMAIN).take(MAX_ARTICLES),
+                            articles = articles.capPerDomain(MAX_PER_DOMAIN).take(MAX_ARTICLES),
                             window = result.window,
                         )
                     }

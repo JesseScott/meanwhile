@@ -85,7 +85,15 @@ class GdeltNewsSource(
     override suspend fun headlines(fips: String): NewsResult {
         val day = fetch(fips, "24h")
         if (day.size >= minArticles) return NewsResult(day, "24h")
-        val week = fetch(fips, "7d")
+        // Widening is a bonus; if it fails (GDELT rate limits hard), keep what the day gave us.
+        val week = try {
+            fetch(fips, "7d")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Trace.log { "7d widening failed for $fips: ${e.message}; keeping ${day.size} articles from 24h" }
+            return NewsResult(day, "24h")
+        }
         return if (week.size > day.size) NewsResult(week, "7d") else NewsResult(day, "24h")
     }
 
@@ -107,7 +115,11 @@ class GdeltNewsSource(
             Trace.log { "$label -> HTTP ${status.value}, ${body.length} chars" }
             when (status) {
                 HttpStatusCode.OK -> {
-                    val articles = parseArtList(body).filter { it.title.isNotBlank() }.distinctBy { it.title }
+                    // Block misfiled outlets before counting, so a feed padded with them still falls back to 7d.
+                    val articles = parseArtList(body)
+                        .filter { it.title.isNotBlank() }
+                        .distinctBy { it.title }
+                        .withoutBlocked(fips)
                     Trace.log { "$label parsed ${articles.size} articles" }
                     return articles
                 }
