@@ -48,7 +48,7 @@ class GeoTest {
     fun searchRingsGrowOutward() {
         val rings = expandingSearchRings(LatLon(-40.0, -176.0))
         assertEquals(DEFAULT_SEARCH_RADII_KM.size, rings.size)
-        assertTrue(rings.all { it.points.size == 8 })
+        assertTrue(rings.all { it.points.size == 16 })
         assertTrue(rings.zipWithNext().all { (a, b) -> a.radiusKm < b.radiusKm })
     }
 

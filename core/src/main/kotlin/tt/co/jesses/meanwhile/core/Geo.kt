@@ -47,7 +47,7 @@ fun approxUtcOffsetHours(lon: Double): Int = (lon / 15.0).roundToInt().coerceIn(
 
 class SearchRing(val radiusKm: Double, val points: List<LatLon>)
 
-val DEFAULT_SEARCH_RADII_KM = listOf(25.0, 50.0, 100.0, 200.0, 400.0, 800.0, 1600.0, 3200.0)
+val DEFAULT_SEARCH_RADII_KM = listOf(25.0, 50.0, 100.0, 200.0, 400.0, 800.0, 1600.0, 3200.0, 5000.0, 8000.0)
 
 /**
  * Rings of points around [center], nearest first. When the antipode is open ocean, a caller
@@ -56,7 +56,7 @@ val DEFAULT_SEARCH_RADII_KM = listOf(25.0, 50.0, 100.0, 200.0, 400.0, 800.0, 160
 fun expandingSearchRings(
     center: LatLon,
     radiiKm: List<Double> = DEFAULT_SEARCH_RADII_KM,
-    bearings: Int = 8,
+    bearings: Int = 16,
 ): List<SearchRing> = radiiKm.map { radius ->
     SearchRing(radius, List(bearings) { i -> center.destination(i * 360.0 / bearings, radius) })
 }

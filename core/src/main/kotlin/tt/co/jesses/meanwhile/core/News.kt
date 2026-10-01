@@ -90,30 +90,43 @@ class GdeltNewsSource(
     }
 
     private suspend fun fetch(fips: String, timespan: String): List<Article> {
-        repeat(MAX_ATTEMPTS) {
-            val (status, body) = throttled {
-                val response = client.get(baseUrl) {
-                    parameter("query", "sourcecountry:$fips")
-                    parameter("mode", "artlist")
-                    parameter("format", "json")
-                    parameter("maxrecords", 250)
-                    parameter("timespan", timespan)
+        repeat(MAX_ATTEMPTS) { attempt ->
+            val label = "GDELT $fips/$timespan attempt ${attempt + 1}/$MAX_ATTEMPTS"
+            val (status, body) = throttled(label) {
+                Trace.timed("$label request") {
+                    val response = client.get(baseUrl) {
+                        parameter("query", "sourcecountry:$fips")
+                        parameter("mode", "artlist")
+                        parameter("format", "json")
+                        parameter("maxrecords", 250)
+                        parameter("timespan", timespan)
+                    }
+                    response.status to response.bodyAsText()
                 }
-                response.status to response.bodyAsText()
             }
+            Trace.log { "$label -> HTTP ${status.value}, ${body.length} chars" }
             when (status) {
-                HttpStatusCode.OK ->
-                    return parseArtList(body).filter { it.title.isNotBlank() }.distinctBy { it.title }
-                HttpStatusCode.TooManyRequests -> delay(retryDelayMs)
+                HttpStatusCode.OK -> {
+                    val articles = parseArtList(body).filter { it.title.isNotBlank() }.distinctBy { it.title }
+                    Trace.log { "$label parsed ${articles.size} articles" }
+                    return articles
+                }
+                HttpStatusCode.TooManyRequests -> {
+                    Trace.log { "$label rate limited, waiting ${retryDelayMs} ms" }
+                    delay(retryDelayMs)
+                }
                 else -> error("GDELT returned ${status.value}")
             }
         }
         error("GDELT is rate limiting requests, try again shortly")
     }
 
-    private suspend fun <T> throttled(block: suspend () -> T): T = gate.withLock {
+    private suspend fun <T> throttled(label: String, block: suspend () -> T): T = gate.withLock {
         val wait = lastCallAt + minIntervalMs - clock()
-        if (wait > 0) delay(wait)
+        if (wait > 0) {
+            Trace.log { "$label throttle wait ${wait} ms" }
+            delay(wait)
+        }
         try {
             block()
         } finally {
@@ -151,12 +164,17 @@ class CachingNewsSource(
 ) : NewsSource {
     override suspend fun headlines(fips: String): NewsResult {
         val cached = store.get(fips)
-        if (cached != null && clock() - cached.savedAt < ttlMs) return cached.toResult()
+        if (cached != null && clock() - cached.savedAt < ttlMs) {
+            Trace.log { "cache HIT $fips (${cached.articles.size} articles, ${(clock() - cached.savedAt) / 1000}s old)" }
+            return cached.toResult()
+        }
+        Trace.log { "cache ${if (cached == null) "MISS" else "STALE"} $fips" }
         return try {
             delegate.headlines(fips).also { store.put(fips, CacheEntry(clock(), it.window, it.articles)) }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            Trace.log { "fetch failed for $fips: ${e::class.simpleName}: ${e.message}; ${if (cached != null) "serving stale cache" else "no cache to fall back on"}" }
             cached?.toResult() ?: throw e
         }
     }

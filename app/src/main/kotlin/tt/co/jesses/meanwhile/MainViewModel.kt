@@ -1,10 +1,12 @@
 package tt.co.jesses.meanwhile
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.HttpTimeout
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +18,7 @@ import tt.co.jesses.meanwhile.core.CachingNewsSource
 import tt.co.jesses.meanwhile.core.GdeltNewsSource
 import tt.co.jesses.meanwhile.core.LatLon
 import tt.co.jesses.meanwhile.core.NewsSource
+import tt.co.jesses.meanwhile.core.Trace
 import tt.co.jesses.meanwhile.core.antipode
 import tt.co.jesses.meanwhile.core.capPerDomain
 import java.io.File
@@ -36,12 +39,27 @@ data class UiState(
     val message: String? = null,
 )
 
+private const val TAG = "Meanwhile"
+
 class MainViewModel(app: Application) : AndroidViewModel(app) {
+    init {
+        Trace.sink = { Log.d(TAG, it) }
+    }
+
     private val geocoding = Geocoding(app)
     private val resolver = AntipodeResolver(geocoding)
     private val location = LocationSource(app)
     private val news: NewsSource = CachingNewsSource(
-        delegate = GdeltNewsSource(HttpClient(OkHttp)),
+        delegate = GdeltNewsSource(
+            HttpClient(OkHttp) {
+                // GDELT can be slow; give it room instead of cutting it off mid-response.
+                install(HttpTimeout) {
+                    connectTimeoutMillis = 15_000
+                    socketTimeoutMillis = 60_000
+                    requestTimeoutMillis = 90_000
+                }
+            },
+        ),
         store = FileNewsCacheStore(File(app.cacheDir, "news")),
     )
 
@@ -92,30 +110,43 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private suspend fun loadFor(here: LatLon, label: String?) {
+        val loadStart = System.nanoTime()
         origin = here
         originLabel = label
         val target = here.antipode()
+        Log.d(TAG, "load: origin (${"%.3f".format(here.lat)}, ${"%.3f".format(here.lon)}) \"$label\" -> antipode (${"%.3f".format(target.lat)}, ${"%.3f".format(target.lon)})")
         _state.update {
             it.copy(status = Status.Loading, originLabel = label, antipode = target, country = null, articles = emptyList(), message = null)
         }
         try {
-            val country = resolver.resolve(target)
-            if (country == null) {
-                _state.update { it.copy(status = Status.Error, message = "Couldn't find any land near your antipode.") }
-                return
+            val empty = mutableSetOf<String>()
+            repeat(MAX_COUNTRY_ATTEMPTS) {
+                val country = resolver.resolve(target, empty)
+                if (country == null) {
+                    _state.update { it.copy(status = Status.Error, message = "Couldn't find any land near your antipode.") }
+                    return
+                }
+                Log.d(TAG, "load: ${country.name} (iso=${country.iso}, fips=${country.fips}, ${country.distanceKm.toInt()} km) after ${(System.nanoTime() - loadStart) / 1_000_000} ms")
+                _state.update { it.copy(country = country) }
+                val result = news.headlines(country.fips)
+                Log.d(TAG, "load: ${country.name} gave ${result.articles.size} articles (${result.window}), ${(System.nanoTime() - loadStart) / 1_000_000} ms in")
+                if (result.articles.isNotEmpty()) {
+                    _state.update {
+                        it.copy(
+                            status = Status.Ready,
+                            articles = result.articles.capPerDomain(MAX_PER_DOMAIN).take(MAX_ARTICLES),
+                            window = result.window,
+                        )
+                    }
+                    return
+                }
+                empty += country.iso
             }
-            _state.update { it.copy(country = country) }
-            val result = news.headlines(country.fips)
-            _state.update {
-                it.copy(
-                    status = Status.Ready,
-                    articles = result.articles.capPerDomain(MAX_PER_DOMAIN).take(MAX_ARTICLES),
-                    window = result.window,
-                )
-            }
+            _state.update { it.copy(status = Status.Error, message = "No headlines found near your antipode. Try another place.") }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            Log.e(TAG, "load failed after ${(System.nanoTime() - loadStart) / 1_000_000} ms", e)
             _state.update { it.copy(status = Status.Error, message = e.message ?: "Something went wrong loading headlines.") }
         }
     }
@@ -123,5 +154,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private companion object {
         const val MAX_PER_DOMAIN = 8
         const val MAX_ARTICLES = 100
+        const val MAX_COUNTRY_ATTEMPTS = 3
     }
 }

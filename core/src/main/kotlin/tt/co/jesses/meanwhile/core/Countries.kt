@@ -29,6 +29,12 @@ private val ISO_TO_FIPS_DIFFERENCES: Map<String, String> = mapOf(
     "YT" to "MF", "ZA" to "SF", "ZM" to "ZA", "ZW" to "ZI",
 )
 
+/**
+ * Uninhabited or research-station-only territories. They turn up as the "nearest land" for
+ * many ocean antipodes (Kerguelen is Vancouver's) but GDELT has no news from them.
+ */
+val NO_COVERAGE_ISO: Set<String> = setOf("TF", "AQ", "BV", "HM", "GS", "IO", "UM")
+
 private fun isAlpha2(code: String) = code.length == 2 && code.all { it in 'A'..'Z' }
 
 /** ISO 3166 alpha-2 to the FIPS code GDELT expects, or null for blank or malformed input. */
