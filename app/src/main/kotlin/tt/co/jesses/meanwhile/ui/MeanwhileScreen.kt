@@ -11,11 +11,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -26,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,43 +55,31 @@ fun MeanwhileScreen(
     onSearch: (String) -> Unit,
     onPickPlace: (NamedPlace) -> Unit,
 ) {
-    var query by rememberSaveable { mutableStateOf("") }
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        item { Header(state) }
-
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Try a different place") },
-                    singleLine = true,
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { onSearch(query) }, enabled = query.isNotBlank()) { Text("Search") }
-                    OutlinedButton(onClick = onUseLocation) { Text("Use my location") }
-                    if (state.antipode != null) OutlinedButton(onClick = onRefresh) { Text("Refresh") }
+    Column(Modifier.fillMaxSize()) {
+        // Everything above the results stays put; only the headlines scroll.
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Header(state)
+            Controls(state, onUseLocation, onRefresh, onSearch)
+            state.searchResults.forEach { place ->
+                TextButton(onClick = { onPickPlace(place) }, modifier = Modifier.fillMaxWidth()) {
+                    Text(place.label, modifier = Modifier.fillMaxWidth())
                 }
             }
+            StatusLine(state)
         }
+        HorizontalDivider()
 
-        items(state.searchResults, key = { "place:${it.label}:${it.point}" }) { place ->
-            TextButton(onClick = { onPickPlace(place) }, modifier = Modifier.fillMaxWidth()) {
-                Text(place.label, modifier = Modifier.fillMaxWidth())
-            }
-        }
-
-        when (state.status) {
-            Status.Loading -> item { CircularProgressIndicator() }
-            Status.Error -> item { Text(state.message ?: "Something went wrong.", color = MaterialTheme.colorScheme.error) }
-            Status.Idle -> item { Text("Allow location, or search for a place, to see what's happening on the other side of the world.") }
-            Status.Ready -> {
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            if (state.status == Status.Ready) {
                 if (state.window == "7d") {
                     item { Text("Quiet there today, so this shows the last week.", style = MaterialTheme.typography.bodySmall) }
                 }
@@ -98,10 +89,50 @@ fun MeanwhileScreen(
                 items(state.articles, key = { it.url }) { ArticleRow(it) }
             }
         }
+    }
+}
 
-        if (state.status != Status.Error && state.message != null) {
-            item { Text(state.message, color = MaterialTheme.colorScheme.error) }
+@Composable
+private fun Controls(
+    state: UiState,
+    onUseLocation: () -> Unit,
+    onRefresh: () -> Unit,
+    onSearch: (String) -> Unit,
+) {
+    var query by rememberSaveable { mutableStateOf("") }
+    OutlinedTextField(
+        value = query,
+        onValueChange = { query = it },
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text("Try a different place") },
+        singleLine = true,
+    )
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Button(onClick = { onSearch(query) }, enabled = query.isNotBlank()) { Text("Search") }
+        OutlinedButton(onClick = onUseLocation) { Text("Use my location") }
+        if (state.antipode != null) OutlinedButton(onClick = onRefresh) { Text("Refresh") }
+    }
+}
+
+@Composable
+private fun StatusLine(state: UiState) {
+    when (state.status) {
+        Status.Loading -> Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+            Text(state.progress ?: "Loading…", style = MaterialTheme.typography.bodyMedium)
         }
+        Status.Error -> Text(state.message ?: "Something went wrong.", color = MaterialTheme.colorScheme.error)
+        Status.Idle -> Text(
+            "Allow location, or search for a place, to see what's happening on the other side of the world.",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Status.Ready -> Unit
+    }
+    if (state.status != Status.Error && state.message != null) {
+        Text(state.message, color = MaterialTheme.colorScheme.error)
     }
 }
 

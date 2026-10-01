@@ -37,6 +37,8 @@ data class UiState(
     val window: String = "24h",
     val searchResults: List<NamedPlace> = emptyList(),
     val message: String? = null,
+    /** What the load is doing right now; only meaningful while [status] is [Status.Loading]. */
+    val progress: String? = null,
 )
 
 private const val TAG = "Meanwhile"
@@ -73,7 +75,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** Caller must already hold the coarse location permission. */
     fun useDeviceLocation() {
         loadJob?.cancel()
-        _state.update { it.copy(status = Status.Loading, message = null) }
+        _state.update { it.copy(status = Status.Loading, message = null, progress = "Getting your location…") }
         loadJob = viewModelScope.launch {
             val here = location.current()
             if (here == null) {
@@ -116,7 +118,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val target = here.antipode()
         Log.d(TAG, "load: origin (${"%.3f".format(here.lat)}, ${"%.3f".format(here.lon)}) \"$label\" -> antipode (${"%.3f".format(target.lat)}, ${"%.3f".format(target.lon)})")
         _state.update {
-            it.copy(status = Status.Loading, originLabel = label, antipode = target, country = null, articles = emptyList(), message = null)
+            it.copy(
+                status = Status.Loading,
+                originLabel = label,
+                antipode = target,
+                country = null,
+                articles = emptyList(),
+                message = null,
+                progress = "Looking for land on the other side of the world…",
+            )
         }
         try {
             val empty = mutableSetOf<String>()
@@ -127,7 +137,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     return
                 }
                 Log.d(TAG, "load: ${country.name} (iso=${country.iso}, fips=${country.fips}, ${country.distanceKm.toInt()} km) after ${(System.nanoTime() - loadStart) / 1_000_000} ms")
-                _state.update { it.copy(country = country) }
+                _state.update {
+                    it.copy(country = country, progress = "Fetching headlines from ${country.name}… the first load can take up to 30 seconds.")
+                }
                 val result = news.headlines(country.fips)
                 Log.d(TAG, "load: ${country.name} gave ${result.articles.size} articles (${result.window}), ${(System.nanoTime() - loadStart) / 1_000_000} ms in")
                 if (result.articles.isNotEmpty()) {
@@ -141,6 +153,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     return
                 }
                 empty += country.iso
+                _state.update { it.copy(progress = "${country.name} had no headlines, trying the next closest country…") }
             }
             _state.update { it.copy(status = Status.Error, message = "No headlines found near your antipode. Try another place.") }
         } catch (e: CancellationException) {
