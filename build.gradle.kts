@@ -1,3 +1,14 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // Generates the open source license list shown by OssLicensesMenuActivity.
+        classpath(libs.google.oss.licenses.plugin)
+    }
+}
+
 plugins {
     alias(libs.plugins.androidApplication) apply false
     alias(libs.plugins.kotlinAndroid) apply false

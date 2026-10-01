@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.composeCompiler)
+    id("com.google.android.gms.oss-licenses-plugin")
 }
 
 android {
@@ -51,11 +52,13 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.browser)
     implementation(libs.play.services.location)
+    implementation(libs.play.services.oss.licenses)
     implementation(libs.ktor.client.okhttp)
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
+    implementation(libs.compose.material.icons.core)
     implementation(libs.compose.ui.tooling.preview)
     debugImplementation(libs.compose.ui.tooling)
 }

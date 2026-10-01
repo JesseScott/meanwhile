@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -14,9 +15,13 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import tt.co.jesses.meanwhile.ui.AboutScreen
 import tt.co.jesses.meanwhile.ui.MeanwhileScreen
 import tt.co.jesses.meanwhile.ui.theme.MeanwhileTheme
 
@@ -44,15 +49,23 @@ class MainActivity : ComponentActivity() {
                         if (viewModel.state.value.status == Status.Idle) requestLocation()
                     }
 
+                    var showAbout by rememberSaveable { mutableStateOf(false) }
+                    BackHandler(enabled = showAbout) { showAbout = false }
+
                     Box(Modifier.safeDrawingPadding()) {
-                        MeanwhileScreen(
-                            state = state,
-                            onUseLocation = requestLocation,
-                            onRefresh = viewModel::refresh,
-                            onSearch = viewModel::search,
-                            onPickPlace = viewModel::usePlace,
-                            onSetMode = viewModel::setMode,
-                        )
+                        if (showAbout) {
+                            AboutScreen(onBack = { showAbout = false })
+                        } else {
+                            MeanwhileScreen(
+                                state = state,
+                                onUseLocation = requestLocation,
+                                onRefresh = viewModel::refresh,
+                                onSearch = viewModel::search,
+                                onPickPlace = viewModel::usePlace,
+                                onSetMode = viewModel::setMode,
+                                onOpenAbout = { showAbout = true },
+                            )
+                        }
                     }
                 }
             }

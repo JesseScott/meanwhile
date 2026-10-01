@@ -14,10 +14,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -75,16 +79,17 @@ fun MeanwhileScreen(
     onSearch: (String) -> Unit,
     onPickPlace: (NamedPlace) -> Unit,
     onSetMode: (ViewMode) -> Unit,
+    onOpenAbout: () -> Unit,
 ) {
     Column(Modifier.fillMaxSize()) {
         // Everything above the results stays put; only the results scroll.
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 8.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Header(state)
+            Header(state, onOpenAbout)
             if (state.antipodeIsWater) ModeSwitch(state.mode, onSetMode)
             Controls(state, onUseLocation, onRefresh, onSearch)
             state.searchResults.forEach { place ->
@@ -177,9 +182,18 @@ private fun StatusLine(state: UiState) {
 }
 
 @Composable
-private fun Header(state: UiState) {
+private fun Header(state: UiState, onOpenAbout: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text("Meanwhile", style = MaterialTheme.typography.headlineMedium)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Meanwhile", style = MaterialTheme.typography.headlineMedium)
+            IconButton(onClick = onOpenAbout) {
+                Icon(Icons.Filled.Settings, contentDescription = "About, privacy and licenses")
+            }
+        }
         val country = state.country
         val antipode = state.antipode
         if (country != null && antipode != null) {

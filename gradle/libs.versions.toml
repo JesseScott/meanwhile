@@ -7,6 +7,8 @@ androidx-core = "1.17.0"
 androidx-lifecycle = "2.9.4"
 androidx-browser = "1.10.0"
 play-services-location = "21.4.0"
+play-services-oss-licenses = "17.5.1"
+oss-licenses-plugin = "0.13.0"
 ktor = "3.6.0"
 kotlinx-serialization = "1.11.0"
 kotlinx-coroutines = "1.11.0"
@@ -23,6 +25,9 @@ compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "play-services-location" }
+play-services-oss-licenses = { module = "com.google.android.gms:play-services-oss-licenses", version.ref = "play-services-oss-licenses" }
+google-oss-licenses-plugin = { module = "com.google.android.gms:oss-licenses-plugin", version.ref = "oss-licenses-plugin" }
+compose-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
