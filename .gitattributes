@@ -1,0 +1,14 @@
+# Store and check out text files with LF on every platform, so Windows autocrlf
+# doesn't mix endings and break shell scripts like gradlew on Linux and macOS.
+* text=auto eol=lf
+
+# Windows batch files need CRLF.
+*.bat text eol=crlf
+
+# Never touch binaries.
+*.jar binary
+*.png binary
+*.jpg binary
+*.webp binary
+*.ttf binary
+*.otf binary
