@@ -30,10 +30,12 @@ class FallbackNewsSource(
             try {
                 val result = source.headlines(place)
                 answered = true
+                // Cleaned before counting, so non-news can't make a thin place look like it has enough.
+                val articles = result.articles.cleaned(place.fips)
                 val before = merged.size
-                for (article in result.articles) merged.putIfAbsent(titleKey(article.title), article)
+                for (article in articles) merged.putIfAbsent(titleKey(article.title), article)
                 if (merged.size > before && result.window == "7d") widest = "7d"
-                Trace.log { "${source::class.simpleName} gave ${result.articles.size} for ${place.name}; ${merged.size} so far" }
+                Trace.log { "${source::class.simpleName} gave ${result.articles.size} (${articles.size} after cleaning) for ${place.name}; ${merged.size} so far" }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

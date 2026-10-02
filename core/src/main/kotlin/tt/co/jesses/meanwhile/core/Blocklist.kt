@@ -16,8 +16,11 @@ fun List<Article>.withoutBlocked(
 ): List<Article> {
     val domains = blocked[fips].orEmpty()
     if (domains.isEmpty()) return this
-    return filterNot { article ->
-        val host = article.domain.lowercase()
-        domains.any { host == it || host.endsWith(".$it") }
-    }
+    return filterNot { article -> domains.any { domainMatches(article.domain, it) } }
+}
+
+/** True if [host] is [domain] or a subdomain of it. */
+internal fun domainMatches(host: String, domain: String): Boolean {
+    val h = host.lowercase()
+    return h == domain || h.endsWith(".$domain")
 }

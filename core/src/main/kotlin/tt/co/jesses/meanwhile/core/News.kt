@@ -125,7 +125,7 @@ class GdeltNewsSource(
                     val articles = parseArtList(body)
                         .filter { it.title.isNotBlank() }
                         .distinctBy { it.title }
-                        .withoutMisfiled(fips)
+                        .cleaned(fips)
                         .map { it.copy(via = VIA) }
                     Trace.log { "$label parsed ${articles.size} articles" }
                     return articles

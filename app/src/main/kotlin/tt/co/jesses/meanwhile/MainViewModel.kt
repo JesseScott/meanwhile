@@ -29,7 +29,7 @@ import tt.co.jesses.meanwhile.core.RssNewsSource
 import tt.co.jesses.meanwhile.core.Trace
 import tt.co.jesses.meanwhile.core.antipode
 import tt.co.jesses.meanwhile.core.capPerDomain
-import tt.co.jesses.meanwhile.core.withoutMisfiled
+import tt.co.jesses.meanwhile.core.cleaned
 import java.io.File
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -180,8 +180,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 val result = news.headlines(NewsPlace(country.iso, country.fips, country.name))
                 // Filtered here, not at fetch time, so cached results and newly added entries are covered too.
-                val articles = result.articles.withoutMisfiled(country.fips)
-                Log.d(TAG, "load: ${country.name} gave ${result.articles.size} articles (${articles.size} after misfile filters, ${result.window}), ${(System.nanoTime() - loadStart) / 1_000_000} ms in")
+                val articles = result.articles.cleaned(country.fips)
+                Log.d(TAG, "load: ${country.name} gave ${result.articles.size} articles (${articles.size} after cleaning, ${result.window}), ${(System.nanoTime() - loadStart) / 1_000_000} ms in")
                 if (articles.isNotEmpty()) {
                     _state.update {
                         it.copy(

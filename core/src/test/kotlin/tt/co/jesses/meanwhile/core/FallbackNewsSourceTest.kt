@@ -66,6 +66,25 @@ class FallbackNewsSourceTest {
     }
 
     @Test
+    fun nonNewsFromTheFirstSourceDoesNotCountTowardsTheMinimum() = runTest {
+        // Two GDELT items for Tonga were job ads. They must not make the place look covered, or RSS never gets asked.
+        val ads = NewsResult(
+            listOf(
+                Article(url = "https://matangitonga.to/a", title = "9529 Ministry of Finance - TASP vacancy procurement officer 1", domain = "matangitonga.to", via = "gdelt"),
+                Article(url = "https://matangitonga.to/b", title = "9526 SPC vacancy communications 1", domain = "matangitonga.to", via = "gdelt"),
+            ),
+            "24h",
+        )
+        val first = Fake(ads)
+        val second = answer("news", 2, "rss", window = "7d")
+
+        val result = FallbackNewsSource(listOf(first, second), minArticles = 2).headlines(place)
+
+        assertEquals(1, second.calls)
+        assertEquals(listOf("news story 0", "news story 1"), result.articles.map { it.title })
+    }
+
+    @Test
     fun skipsASourceThatFailsAndCarriesOn() = runTest {
         val sources = listOf(Fake(error = RateLimitedException("GDELT")), answer("b", 6, "rss"))
 
