@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,6 +31,7 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,13 +40,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import tt.co.jesses.meanwhile.NamedPlace
 import tt.co.jesses.meanwhile.ResolvedCountry
 import tt.co.jesses.meanwhile.Status
+import tt.co.jesses.meanwhile.UiError
+import tt.co.jesses.meanwhile.UiEvent
+import tt.co.jesses.meanwhile.UiNotice
 import tt.co.jesses.meanwhile.UiState
 import tt.co.jesses.meanwhile.ViewMode
+import tt.co.jesses.meanwhile.antipodeIsWater
 import tt.co.jesses.meanwhile.core.Article
 import tt.co.jesses.meanwhile.core.DayPhase
 import tt.co.jesses.meanwhile.core.LatLon
@@ -57,6 +63,7 @@ import tt.co.jesses.meanwhile.core.oceanNameAt
 import tt.co.jesses.meanwhile.core.seaState
 import tt.co.jesses.meanwhile.core.seenInstant
 import tt.co.jesses.meanwhile.core.sunAltitudeDeg
+import tt.co.jesses.meanwhile.showingOcean
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
@@ -64,25 +71,20 @@ import java.time.format.DateTimeFormatter
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-/** True when the antipode is open water and the user can pick between nearest land and the sea. */
-private val UiState.antipodeIsWater: Boolean
-    get() = (country?.distanceKm ?: 0.0) > 0
+/** The label the view model gives a place that came from the device's location. */
+private const val YOUR_LOCATION = "Your location"
 
-private val UiState.showingOcean: Boolean
-    get() = mode == ViewMode.Ocean && antipodeIsWater
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MeanwhileScreen(
     state: UiState,
     onUseLocation: () -> Unit,
-    onRefresh: () -> Unit,
-    onSearch: (String) -> Unit,
-    onPickPlace: (NamedPlace) -> Unit,
-    onSetMode: (ViewMode) -> Unit,
+    onEvent: (UiEvent) -> Unit,
     onOpenAbout: () -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     Column(Modifier.fillMaxSize()) {
-        // Everything above the results stays put; only the results scroll.
+        // Everything above the results stays put; only the results scroll, and pulling them down refreshes.
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -90,33 +92,49 @@ fun MeanwhileScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Header(state, onOpenAbout)
-            if (state.antipodeIsWater) ModeSwitch(state.mode, onSetMode)
-            Controls(state, onUseLocation, onRefresh, onSearch)
+            if (state.antipodeIsWater) ModeSwitch(state.mode) { onEvent(UiEvent.SetMode(it)) }
+            Controls(
+                onSearch = { onEvent(UiEvent.Search(it)) },
+                onUseLocation = onUseLocation,
+            )
             state.searchResults.forEach { place ->
-                TextButton(onClick = { onPickPlace(place) }, modifier = Modifier.fillMaxWidth()) {
+                TextButton(onClick = { onEvent(UiEvent.PickPlace(place)) }, modifier = Modifier.fillMaxWidth()) {
                     Text(place.label, modifier = Modifier.fillMaxWidth())
                 }
             }
-            StatusLine(state)
+            StatusLine(
+                state = state,
+                onOpenSettings = onOpenSettings,
+                onTryAgain = {
+                    // Without a location there is nothing to refresh, so ask for the location again.
+                    if (state.error == UiError.LocationUnavailable) onUseLocation() else onEvent(UiEvent.Refresh)
+                },
+            )
         }
         HorizontalDivider()
 
-        LazyColumn(
+        PullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = { onEvent(UiEvent.Refresh) },
             modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (state.status == Status.Ready) {
-                if (state.showingOcean) {
-                    item { OceanCard(state) }
-                } else {
-                    if (state.window == "7d") {
-                        item { Text("Quiet there today, so this shows the last week.", style = MaterialTheme.typography.bodySmall) }
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                if (state.status == Status.Ready) {
+                    if (state.showingOcean) {
+                        item { OceanCard(state) }
+                    } else {
+                        if (state.window == "7d") {
+                            item { Text("Quiet there today, so this shows the last week.", style = MaterialTheme.typography.bodySmall) }
+                        }
+                        if (state.articles.isEmpty()) {
+                            item { Text("No headlines found for ${state.country?.name ?: "that region"}.") }
+                        }
+                        items(state.articles, key = { it.url }) { ArticleRow(it) }
                     }
-                    if (state.articles.isEmpty()) {
-                        item { Text("No headlines found for ${state.country?.name ?: "that region"}.") }
-                    }
-                    items(state.articles, key = { it.url }) { ArticleRow(it) }
                 }
             }
         }
@@ -138,12 +156,7 @@ private fun ModeSwitch(mode: ViewMode, onSetMode: (ViewMode) -> Unit) {
 }
 
 @Composable
-private fun Controls(
-    state: UiState,
-    onUseLocation: () -> Unit,
-    onRefresh: () -> Unit,
-    onSearch: (String) -> Unit,
-) {
+private fun Controls(onSearch: (String) -> Unit, onUseLocation: () -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
     OutlinedTextField(
         value = query,
@@ -155,29 +168,40 @@ private fun Controls(
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Button(onClick = { onSearch(query) }, enabled = query.isNotBlank()) { Text("Search") }
         OutlinedButton(onClick = onUseLocation) { Text("Use my location") }
-        if (state.antipode != null) OutlinedButton(onClick = onRefresh) { Text("Refresh") }
     }
 }
 
 @Composable
-private fun StatusLine(state: UiState) {
+private fun StatusLine(state: UiState, onTryAgain: () -> Unit, onOpenSettings: () -> Unit) {
     when (state.status) {
         Status.Loading -> Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-            Text(state.progress ?: "Loading…", style = MaterialTheme.typography.bodyMedium)
+            Text(state.progress?.text() ?: "Loading…", style = MaterialTheme.typography.bodyMedium)
         }
-        Status.Error -> Text(state.message ?: "Something went wrong.", color = MaterialTheme.colorScheme.error)
-        Status.Idle -> Text(
-            "Allow location, or search for a place, to see what's happening on the other side of the world.",
-            style = MaterialTheme.typography.bodyMedium,
-        )
+        Status.Error -> Column {
+            Text((state.error ?: UiError.Unknown).text(), color = MaterialTheme.colorScheme.error)
+            TextButton(onClick = onTryAgain) { Text("Try again") }
+        }
+        // A notice (such as "location is off") says it better than the generic hint, so don't show both.
+        Status.Idle -> if (state.notice == null) {
+            Text(
+                "Allow location, or search for a place, to see what's happening on the other side of the world.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
         Status.Ready -> Unit
     }
-    if (state.status != Status.Error && state.message != null) {
-        Text(state.message, color = MaterialTheme.colorScheme.error)
+    state.notice?.let { notice ->
+        Text(
+            notice.text(),
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (notice == UiNotice.RefreshFailed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        // Android stops showing the permission dialog after two refusals, so the only way back is the app's settings.
+        if (notice == UiNotice.LocationDenied) TextButton(onClick = onOpenSettings) { Text("Open settings") }
     }
 }
 
@@ -189,7 +213,14 @@ private fun Header(state: UiState, onOpenAbout: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Meanwhile", style = MaterialTheme.typography.headlineMedium)
+            Column {
+                Text("Meanwhile", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    TAGLINE,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             IconButton(onClick = onOpenAbout) {
                 Icon(Icons.Filled.Settings, contentDescription = "About, privacy and licenses")
             }
@@ -200,8 +231,9 @@ private fun Header(state: UiState, onOpenAbout: () -> Unit) {
             val ocean = state.showingOcean
             val title = if (ocean) "🌊 ${oceanNameAt(antipode)}" else "${flagEmoji(country.iso)} ${country.name}"
             Text(title, style = MaterialTheme.typography.titleLarge)
+            val place = state.originLabel?.takeIf { it != YOUR_LOCATION } ?: "you"
             Text(
-                "Opposite ${state.originLabel ?: "you"}. It's about ${localTimeThere(antipode)} there.",
+                "Opposite $place. It's about ${localTimeThere(antipode)} there.",
                 style = MaterialTheme.typography.bodyMedium,
             )
             if (country.distanceKm > 0) {

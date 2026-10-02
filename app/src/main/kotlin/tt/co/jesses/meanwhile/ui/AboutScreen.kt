@@ -102,7 +102,7 @@ fun AboutScreen(onBack: () -> Unit) {
                 Bullet("Places you search for are sent to your device's geocoder to look up their coordinates.")
                 Bullet(
                     "Headlines are kept on your phone for about 20 minutes per country to speed things up. " +
-                        "Clearing the app's cache removes them. Your choice of land or ocean view is also remembered.",
+                        "Clearing the app's cache removes them. The app also remembers that you have seen its welcome screen, and nothing else.",
                 )
                 Bullet(
                     "No ads, analytics or tracking. Tapping a headline opens the publisher's own website in your browser, " +

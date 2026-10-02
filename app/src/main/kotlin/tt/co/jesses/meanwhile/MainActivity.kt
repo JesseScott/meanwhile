@@ -1,28 +1,12 @@
 package tt.co.jesses.meanwhile
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import tt.co.jesses.meanwhile.ui.AboutScreen
-import tt.co.jesses.meanwhile.ui.MeanwhileScreen
+import tt.co.jesses.meanwhile.ui.MeanwhileApp
 import tt.co.jesses.meanwhile.ui.theme.MeanwhileTheme
 
 class MainActivity : ComponentActivity() {
@@ -34,39 +18,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MeanwhileTheme {
                 Surface {
-                    val state by viewModel.state.collectAsStateWithLifecycle()
-                    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-                        if (granted) viewModel.useDeviceLocation()
-                    }
-                    val requestLocation = {
-                        val granted = ContextCompat.checkSelfPermission(
-                            this, Manifest.permission.ACCESS_COARSE_LOCATION,
-                        ) == PackageManager.PERMISSION_GRANTED
-                        if (granted) viewModel.useDeviceLocation() else permission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
-                    }
-
-                    LaunchedEffect(Unit) {
-                        if (viewModel.state.value.status == Status.Idle) requestLocation()
-                    }
-
-                    var showAbout by rememberSaveable { mutableStateOf(false) }
-                    BackHandler(enabled = showAbout) { showAbout = false }
-
-                    Box(Modifier.safeDrawingPadding()) {
-                        if (showAbout) {
-                            AboutScreen(onBack = { showAbout = false })
-                        } else {
-                            MeanwhileScreen(
-                                state = state,
-                                onUseLocation = requestLocation,
-                                onRefresh = viewModel::refresh,
-                                onSearch = viewModel::search,
-                                onPickPlace = viewModel::usePlace,
-                                onSetMode = viewModel::setMode,
-                                onOpenAbout = { showAbout = true },
-                            )
-                        }
-                    }
+                    MeanwhileApp(viewModel)
                 }
             }
         }
