@@ -55,6 +55,7 @@ import tt.co.jesses.meanwhile.core.Article
 import tt.co.jesses.meanwhile.core.DayPhase
 import tt.co.jesses.meanwhile.core.LatLon
 import tt.co.jesses.meanwhile.core.MarineConditions
+import tt.co.jesses.meanwhile.core.TelemetryEvent
 import tt.co.jesses.meanwhile.core.approxUtcOffsetHours
 import tt.co.jesses.meanwhile.core.compassPoint
 import tt.co.jesses.meanwhile.core.dayPhaseOf
@@ -321,10 +322,13 @@ private fun Fact(label: String, value: String, detail: String?) {
 @Composable
 private fun ArticleRow(article: Article) {
     val context = LocalContext.current
+    val telemetry = LocalTelemetry.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
+                // Only which source supplied it is reported, never the article, its outlet or its place.
+                telemetry.log(TelemetryEvent.ArticleOpened(article.via))
                 runCatching { CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(article.url)) }
             },
     ) {

@@ -5,6 +5,13 @@ plugins {
     id("com.google.android.gms.oss-licenses-plugin")
 }
 
+// Firebase (analytics and crash reports) needs app/google-services.json from your own Firebase project. It is not
+// committed. Without it the build still works and the app simply collects nothing.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+    apply(plugin = "com.google.firebase.crashlytics")
+}
+
 android {
     namespace = "tt.co.jesses.meanwhile"
     compileSdk = 36
@@ -53,7 +60,12 @@ dependencies {
     implementation(libs.androidx.browser)
     implementation(libs.play.services.location)
     implementation(libs.play.services.oss.licenses)
+    implementation(libs.datastore.preferences)
     implementation(libs.ktor.client.okhttp)
+
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)

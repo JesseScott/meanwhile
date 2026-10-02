@@ -55,8 +55,9 @@ fun LocationIntroScreen(
                 "For most people that point is open water. You'll see the sea first, with a prompt to read headlines from the nearest land.",
             )
             Point(
-                "Private by design",
-                "Your location isn't saved, and there's no account. There are details under About, in the settings icon.",
+                "What we keep",
+                "Meanwhile doesn't store your location, and there's no account. Usage and crash reports are off unless you turn " +
+                    "them on under About, where you can also read the details.",
             )
         }
         Button(onClick = onContinue, modifier = Modifier.fillMaxWidth()) { Text("Continue") }

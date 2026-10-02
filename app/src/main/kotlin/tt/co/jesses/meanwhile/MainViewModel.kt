@@ -1,7 +1,6 @@
 package tt.co.jesses.meanwhile
 
 import android.app.Application
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.ktor.client.HttpClient
@@ -9,6 +8,7 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,13 +21,18 @@ import tt.co.jesses.meanwhile.core.FallbackNewsSource
 import tt.co.jesses.meanwhile.core.GdeltNewsSource
 import tt.co.jesses.meanwhile.core.GoogleNewsSource
 import tt.co.jesses.meanwhile.core.LatLon
+import tt.co.jesses.meanwhile.core.LoadKindName
 import tt.co.jesses.meanwhile.core.MarineSource
+import tt.co.jesses.meanwhile.core.ModeSwitchVia
 import tt.co.jesses.meanwhile.core.NewsFailure
 import tt.co.jesses.meanwhile.core.NewsPlace
 import tt.co.jesses.meanwhile.core.NewsSource
 import tt.co.jesses.meanwhile.core.NewsUnavailableException
 import tt.co.jesses.meanwhile.core.OpenMeteoMarineSource
+import tt.co.jesses.meanwhile.core.PlaceSource
 import tt.co.jesses.meanwhile.core.RssNewsSource
+import tt.co.jesses.meanwhile.core.Telemetry
+import tt.co.jesses.meanwhile.core.TelemetryEvent
 import tt.co.jesses.meanwhile.core.Trace
 import tt.co.jesses.meanwhile.core.antipode
 import tt.co.jesses.meanwhile.core.capPerDomain
@@ -51,10 +56,21 @@ private enum class LoadKind {
     Refresh,
 }
 
+private fun LoadKind.telemetryName() = when (this) {
+    LoadKind.NewPlace -> LoadKindName.NewPlace
+    LoadKind.SwitchMode -> LoadKindName.SwitchMode
+    LoadKind.Refresh -> LoadKindName.Refresh
+}
+
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     init {
-        Trace.sink = { Log.d(TAG, it) }
+        Trace.sink = { AppLog.d(TAG, it) }
     }
+
+    /** Usage and crash reporting, which can only be sent facts from a fixed list (see core's TelemetryEvent). */
+    private val telemetry: Telemetry = (app as MeanwhileApplication).telemetry
+    private val settings = (app as MeanwhileApplication).settings
+    private var askScheduled = false
 
     private val geocoding = Geocoding(app)
     private val resolver = AntipodeResolver(geocoding)
@@ -92,7 +108,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             UiEvent.LocationDenied -> _state.update { it.copy(notice = UiNotice.LocationDenied) }
             is UiEvent.Search -> search(event.query)
             is UiEvent.PickPlace -> usePlace(event.place)
-            is UiEvent.SetMode -> setMode(event.mode)
+            is UiEvent.SetMode -> setMode(event.mode, event.via)
             UiEvent.Refresh -> refresh()
         }
     }
@@ -105,6 +121,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             if (here == null) {
                 _state.update { it.copy(status = Status.Error, error = UiError.LocationUnavailable) }
             } else {
+                telemetry.log(TelemetryEvent.PlaceChosen(PlaceSource.Device))
                 loadFor(here, "Your location", LoadKind.NewPlace)
             }
         }
@@ -112,6 +129,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun usePlace(place: NamedPlace) {
         _state.update { it.copy(searchResults = emptyList()) }
+        telemetry.log(TelemetryEvent.PlaceChosen(PlaceSource.Search))
         loadJob?.cancel()
         loadJob = viewModelScope.launch { loadFor(place.point, place.label, LoadKind.NewPlace) }
     }
@@ -122,8 +140,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         loadJob = viewModelScope.launch { loadFor(here, originLabel, LoadKind.Refresh) }
     }
 
-    private fun setMode(mode: ViewMode) {
+    private fun setMode(mode: ViewMode, via: ModeSwitchVia) {
         if (mode == _state.value.mode) return
+        telemetry.log(TelemetryEvent.ModeSwitched(toOcean = mode == ViewMode.Ocean, via = via))
         val here = origin
         if (here == null) {
             _state.update { it.copy(mode = mode) }
@@ -151,7 +170,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         origin = here
         originLabel = label
         val target = here.antipode()
-        Log.d(TAG, "load($kind): origin (${"%.3f".format(here.lat)}, ${"%.3f".format(here.lon)}) \"$label\" -> antipode (${"%.3f".format(target.lat)}, ${"%.3f".format(target.lon)})")
+        AppLog.d(TAG, "load($kind): origin (${"%.3f".format(here.lat)}, ${"%.3f".format(here.lon)}) \"$label\" -> antipode (${"%.3f".format(target.lat)}, ${"%.3f".format(target.lon)})")
 
         val before = _state.value
         _state.update {
@@ -196,7 +215,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     return
                 }
                 val water = country.distanceKm > 0
-                Log.d(TAG, "load: ${country.name} (iso=${country.iso}, fips=${country.fips}, ${country.distanceKm.toInt()} km) after ${(System.nanoTime() - loadStart) / 1_000_000} ms")
+                AppLog.d(TAG, "load: ${country.name} (iso=${country.iso}, fips=${country.fips}, ${country.distanceKm.toInt()} km) after ${(System.nanoTime() - loadStart) / 1_000_000} ms")
 
                 // Open water opens on the sea; the user can ask for the nearest land (see OfferNearestLand).
                 if (kind == LoadKind.NewPlace && attempt == 0) {
@@ -206,8 +225,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 if (_state.value.mode == ViewMode.Ocean && water) {
                     _state.update { it.copy(country = country, progress = Progress.ReadingSea) }
                     val conditions = marine.conditions(target)
-                    Log.d(TAG, "load: sea conditions ${if (conditions == null) "unavailable" else "ok"}, ${(System.nanoTime() - loadStart) / 1_000_000} ms in")
+                    AppLog.d(TAG, "load: sea conditions ${if (conditions == null) "unavailable" else "ok"}, ${(System.nanoTime() - loadStart) / 1_000_000} ms in")
                     _state.update { it.copy(status = Status.Ready, marine = conditions, isRefreshing = false, error = null) }
+                    telemetry.log(
+                        TelemetryEvent.LoadFinished(
+                            water = true, showingOcean = true, kind = kind.telemetryName(), articles = 0,
+                            durationMs = (System.nanoTime() - loadStart) / 1_000_000, sources = emptySet(),
+                        ),
+                    )
+                    noteGoodLoad()
                     if (kind == LoadKind.NewPlace) _effects.send(UiEffect.OfferNearestLand(country.name, country.distanceKm.roundToInt()))
                     return
                 }
@@ -216,7 +242,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val result = news.headlines(NewsPlace(country.iso, country.fips, country.name))
                 // Cleaned here, not at fetch time, so cached results and newly added rules are covered too.
                 val articles = result.articles.cleaned(country.fips)
-                Log.d(TAG, "load: ${country.name} gave ${result.articles.size} articles (${articles.size} after cleaning, ${result.window}), ${(System.nanoTime() - loadStart) / 1_000_000} ms in")
+                AppLog.d(TAG, "load: ${country.name} gave ${result.articles.size} articles (${articles.size} after cleaning, ${result.window}), ${(System.nanoTime() - loadStart) / 1_000_000} ms in")
                 if (articles.isNotEmpty()) {
                     _state.update {
                         it.copy(
@@ -227,6 +253,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                             error = null,
                         )
                     }
+                    telemetry.log(
+                        TelemetryEvent.LoadFinished(
+                            water = water, showingOcean = false, kind = kind.telemetryName(), articles = articles.size,
+                            durationMs = (System.nanoTime() - loadStart) / 1_000_000, sources = articles.map { it.via }.toSet(),
+                        ),
+                    )
+                    noteGoodLoad()
                     return
                 }
                 empty += country.iso
@@ -236,7 +269,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         } catch (e: CancellationException) {
             throw e
         } catch (e: NewsUnavailableException) {
-            Log.e(TAG, "load failed after ${(System.nanoTime() - loadStart) / 1_000_000} ms: ${e.reason}", e)
+            AppLog.e(TAG, "load failed after ${(System.nanoTime() - loadStart) / 1_000_000} ms: ${e.reason}", e)
             fail(
                 kind,
                 when (e.reason) {
@@ -246,13 +279,34 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 },
             )
         } catch (e: Exception) {
-            Log.e(TAG, "load failed after ${(System.nanoTime() - loadStart) / 1_000_000} ms", e)
+            AppLog.e(TAG, "load failed after ${(System.nanoTime() - loadStart) / 1_000_000} ms", e)
+            // An unexpected failure: worth a crash report, which carries only the type and stack frames, not the message.
+            telemetry.recordError(e, "load")
             fail(kind, if (e is IOException) UiError.Offline else UiError.Unknown)
+        }
+    }
+
+    /**
+     * A load gave the user something. Count it, and once the app has worked for them a few times, ask once about
+     * sharing usage and crash reports, after a pause so it never competes with the content they came for.
+     */
+    private fun noteGoodLoad() {
+        viewModelScope.launch {
+            settings.recordGoodLoad()
+            // Debug builds ask even without a Firebase project, so the prompt can be tried.
+            if (!askScheduled && settings.shouldAskAboutAnalytics(canCollect = telemetry.available || AppLog.enabled)) {
+                askScheduled = true
+                delay(ASK_DELAY_MS)
+                settings.recordPromptShown()
+                _effects.send(UiEffect.AskToShareUsage)
+                askScheduled = false
+            }
         }
     }
 
     /** A failed refresh over content that is still there keeps the content; anything else becomes an error screen. */
     private fun fail(kind: LoadKind, error: UiError) {
+        telemetry.log(TelemetryEvent.LoadFailed(error.name, kind.telemetryName()))
         _state.update {
             if (kind == LoadKind.Refresh && it.status == Status.Ready) {
                 it.copy(isRefreshing = false, notice = UiNotice.RefreshFailed)
@@ -266,5 +320,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         const val MAX_PER_DOMAIN = 8
         const val MAX_ARTICLES = 100
         const val MAX_COUNTRY_ATTEMPTS = 3
+        const val ASK_DELAY_MS = 5_000L
     }
 }

@@ -3,6 +3,7 @@ package tt.co.jesses.meanwhile
 import tt.co.jesses.meanwhile.core.Article
 import tt.co.jesses.meanwhile.core.LatLon
 import tt.co.jesses.meanwhile.core.MarineConditions
+import tt.co.jesses.meanwhile.core.ModeSwitchVia
 
 /*
  * The screen's contract: the UI sends [UiEvent]s, the view model answers with an immutable [UiState] and
@@ -69,7 +70,7 @@ sealed interface UiEvent {
     data object LocationDenied : UiEvent
     data class Search(val query: String) : UiEvent
     data class PickPlace(val place: NamedPlace) : UiEvent
-    data class SetMode(val mode: ViewMode) : UiEvent
+    data class SetMode(val mode: ViewMode, val via: ModeSwitchVia = ModeSwitchVia.Switch) : UiEvent
     /** Pull to refresh, or "try again" after an error. */
     data object Refresh : UiEvent
 }
@@ -78,4 +79,7 @@ sealed interface UiEvent {
 sealed interface UiEffect {
     /** The antipode is open water and we are showing the sea; offer headlines from the nearest land. */
     data class OfferNearestLand(val country: String, val distanceKm: Int) : UiEffect
+
+    /** The app has worked for the user a few times: ask, gently, if they'd share usage and crash reports. */
+    data object AskToShareUsage : UiEffect
 }

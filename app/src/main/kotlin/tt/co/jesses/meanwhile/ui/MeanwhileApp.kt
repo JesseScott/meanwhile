@@ -1,7 +1,6 @@
 package tt.co.jesses.meanwhile.ui
 
 import android.Manifest
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -17,10 +16,13 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -29,13 +31,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import tt.co.jesses.meanwhile.MainViewModel
+import tt.co.jesses.meanwhile.MeanwhileApplication
+import kotlinx.coroutines.launch
 import tt.co.jesses.meanwhile.Status
+import tt.co.jesses.meanwhile.core.AnalyticsChoice
+import tt.co.jesses.meanwhile.core.ModeSwitchVia
+import tt.co.jesses.meanwhile.core.TelemetryEvent
 import tt.co.jesses.meanwhile.UiEffect
 import tt.co.jesses.meanwhile.UiEvent
 import tt.co.jesses.meanwhile.ViewMode
-
-private const val PREFS = "settings"
-private const val KEY_INTRO_SEEN = "intro_seen"
 
 /**
  * Everything around the main screen: the one-time location intro, the permission request, the About page, and
@@ -44,15 +48,18 @@ private const val KEY_INTRO_SEEN = "intro_seen"
 @Composable
 fun MeanwhileApp(viewModel: MainViewModel) {
     val context = LocalContext.current
-    val prefs = remember { context.getSharedPreferences(PREFS, Context.MODE_PRIVATE) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val telemetry = remember { (context.applicationContext as MeanwhileApplication).telemetry }
+    val settings = remember { (context.applicationContext as MeanwhileApplication).settings }
 
     fun hasLocationPermission() = ContextCompat.checkSelfPermission(
         context, Manifest.permission.ACCESS_COARSE_LOCATION,
     ) == PackageManager.PERMISSION_GRANTED
 
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        telemetry.log(TelemetryEvent.PermissionResult(granted))
         viewModel.onEvent(if (granted) UiEvent.UseMyLocation else UiEvent.LocationDenied)
     }
     val useLocation = {
@@ -61,7 +68,10 @@ fun MeanwhileApp(viewModel: MainViewModel) {
 
     // The system prompt never appears out of the blue: first time round, an intro explains it. If it was
     // already answered, the screen's own hint and "Use my location" button take over.
-    var showIntro by rememberSaveable { mutableStateOf(!hasLocationPermission() && !prefs.getBoolean(KEY_INTRO_SEEN, false)) }
+    // null until the saved setting has been read (a few milliseconds), so the screen waits instead of flashing the wrong one.
+    val introSeen by produceState<Boolean?>(initialValue = null) { settings.introSeen.collect { value = it } }
+    var introDismissed by rememberSaveable { mutableStateOf(false) }
+    val showIntro = introSeen == false && !introDismissed && !hasLocationPermission()
     var showAbout by rememberSaveable { mutableStateOf(false) }
     BackHandler(enabled = showAbout) { showAbout = false }
 
@@ -79,7 +89,19 @@ fun MeanwhileApp(viewModel: MainViewModel) {
                         withDismissAction = true,
                         duration = SnackbarDuration.Long,
                     )
-                    if (answer == SnackbarResult.ActionPerformed) viewModel.onEvent(UiEvent.SetMode(ViewMode.Land))
+                    if (answer == SnackbarResult.ActionPerformed) {
+                        viewModel.onEvent(UiEvent.SetMode(ViewMode.Land, ModeSwitchVia.Snackbar))
+                    }
+                }
+                UiEffect.AskToShareUsage -> {
+                    val answer = snackbar.showSnackbar(
+                        message = "Help improve Meanwhile? You can share anonymous usage and crash reports.",
+                        actionLabel = "Turn on",
+                        withDismissAction = true,
+                        duration = SnackbarDuration.Long,
+                    )
+                    // Dismissing is not a no: it just means "not now", and the view model stops asking after two tries.
+                    if (answer == SnackbarResult.ActionPerformed) settings.setAnalyticsChoice(AnalyticsChoice.Accepted)
                 }
             }
         }
@@ -87,32 +109,38 @@ fun MeanwhileApp(viewModel: MainViewModel) {
     // A different place makes any offer about the last one stale.
     LaunchedEffect(state.antipode) { snackbar.currentSnackbarData?.dismiss() }
 
-    Box(Modifier.fillMaxSize().safeDrawingPadding()) {
-        when {
-            showIntro -> LocationIntroScreen(
-                onContinue = {
-                    prefs.edit().putBoolean(KEY_INTRO_SEEN, true).apply()
-                    showIntro = false
-                    useLocation()
-                },
-                onSearchInstead = {
-                    prefs.edit().putBoolean(KEY_INTRO_SEEN, true).apply()
-                    showIntro = false
-                },
-            )
-            showAbout -> AboutScreen(onBack = { showAbout = false })
-            else -> MeanwhileScreen(
-                state = state,
-                onUseLocation = useLocation,
-                onEvent = viewModel::onEvent,
-                onOpenAbout = { showAbout = true },
-                onOpenSettings = {
-                    context.startActivity(
-                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)),
-                    )
-                },
-            )
+    CompositionLocalProvider(LocalTelemetry provides telemetry) {
+        Box(Modifier.fillMaxSize().safeDrawingPadding()) {
+            when {
+                introSeen == null -> Unit
+                showIntro -> LocationIntroScreen(
+                    onContinue = {
+                        scope.launch { settings.setIntroSeen() }
+                        introDismissed = true
+                        useLocation()
+                    },
+                    onSearchInstead = {
+                        scope.launch { settings.setIntroSeen() }
+                        introDismissed = true
+                    },
+                )
+                showAbout -> AboutScreen(onBack = { showAbout = false })
+                else -> MeanwhileScreen(
+                    state = state,
+                    onUseLocation = useLocation,
+                    onEvent = viewModel::onEvent,
+                    onOpenAbout = {
+                        telemetry.log(TelemetryEvent.AboutOpened)
+                        showAbout = true
+                    },
+                    onOpenSettings = {
+                        context.startActivity(
+                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)),
+                        )
+                    },
+                )
+            }
+            SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
         }
-        SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
     }
 }

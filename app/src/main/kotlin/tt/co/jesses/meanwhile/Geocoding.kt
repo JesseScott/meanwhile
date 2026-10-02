@@ -4,7 +4,6 @@ import android.content.Context
 import android.location.Address
 import android.location.Geocoder
 import android.os.Build
-import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -32,7 +31,7 @@ class Geocoding(context: Context) {
     private val geocoder = Geocoder(context, Locale.ENGLISH)
 
     init {
-        Log.d(TAG, "Geocoder.isPresent=${Geocoder.isPresent()} sdk=${Build.VERSION.SDK_INT}")
+        AppLog.d(TAG, "Geocoder.isPresent=${Geocoder.isPresent()} sdk=${Build.VERSION.SDK_INT}")
     }
 
     /** ISO country code of the land at [point], or null over open water or when geocoding fails. */
@@ -40,7 +39,7 @@ class Geocoding(context: Context) {
         val start = System.nanoTime()
         val iso = lookup(point.lat, point.lon).firstOrNull()?.countryCode?.uppercase()
         val ms = (System.nanoTime() - start) / 1_000_000
-        Log.d(TAG, "geocode (${"%.2f".format(point.lat)}, ${"%.2f".format(point.lon)}) -> ${iso ?: "no country"} in $ms ms")
+        AppLog.d(TAG, "geocode (${"%.2f".format(point.lat)}, ${"%.2f".format(point.lon)}) -> ${iso ?: "no country"} in $ms ms")
         return iso
     }
 
@@ -48,7 +47,7 @@ class Geocoding(context: Context) {
         val start = System.nanoTime()
         val addresses = searchByName(query)
         val ms = (System.nanoTime() - start) / 1_000_000
-        Log.d(TAG, "search \"$query\" -> ${addresses.size} results in $ms ms")
+        AppLog.d(TAG, "search \"$query\" -> ${addresses.size} results in $ms ms")
         return addresses.toPlaces()
     }
 
@@ -63,7 +62,7 @@ class Geocoding(context: Context) {
 
     private suspend fun lookup(lat: Double, lon: Double): List<Address> {
         if (!Geocoder.isPresent()) {
-            Log.w(TAG, "Geocoder not present on this device")
+            AppLog.w(TAG, "Geocoder not present on this device")
             return emptyList()
         }
         return if (Build.VERSION.SDK_INT >= 33) {
@@ -72,13 +71,13 @@ class Geocoding(context: Context) {
                     geocoder.getFromLocation(lat, lon, 1, object : Geocoder.GeocodeListener {
                         override fun onGeocode(addresses: MutableList<Address>) = cont.resume(addresses)
                         override fun onError(errorMessage: String?) {
-                            Log.w(TAG, "geocoder error: $errorMessage")
+                            AppLog.w(TAG, "geocoder error: $errorMessage")
                             cont.resume(emptyList())
                         }
                     })
                 }
             } ?: run {
-                Log.w(TAG, "geocoder timed out after $GEOCODER_TIMEOUT_MS ms for ($lat, $lon)")
+                AppLog.w(TAG, "geocoder timed out after $GEOCODER_TIMEOUT_MS ms")
                 emptyList()
             }
         } else {
@@ -95,7 +94,7 @@ class Geocoding(context: Context) {
 
     private suspend fun searchByName(query: String): List<Address> {
         if (!Geocoder.isPresent()) {
-            Log.w(TAG, "Geocoder not present on this device")
+            AppLog.w(TAG, "Geocoder not present on this device")
             return emptyList()
         }
         return if (Build.VERSION.SDK_INT >= 33) {
@@ -104,13 +103,13 @@ class Geocoding(context: Context) {
                     geocoder.getFromLocationName(query, 5, object : Geocoder.GeocodeListener {
                         override fun onGeocode(addresses: MutableList<Address>) = cont.resume(addresses)
                         override fun onError(errorMessage: String?) {
-                            Log.w(TAG, "geocoder search error: $errorMessage")
+                            AppLog.w(TAG, "geocoder search error: $errorMessage")
                             cont.resume(emptyList())
                         }
                     })
                 }
             } ?: run {
-                Log.w(TAG, "geocoder search timed out after $GEOCODER_TIMEOUT_MS ms for \"$query\"")
+                AppLog.w(TAG, "geocoder search timed out after $GEOCODER_TIMEOUT_MS ms")
                 emptyList()
             }
         } else {
@@ -143,12 +142,12 @@ class AntipodeResolver(private val geocoding: Geocoding) {
      */
     suspend fun resolve(antipode: LatLon, exclude: Set<String> = emptySet()): ResolvedCountry? {
         val skip = NO_COVERAGE_ISO + exclude
-        Log.d(TAG, "resolving antipode (${"%.3f".format(antipode.lat)}, ${"%.3f".format(antipode.lon)}), skipping $skip")
+        AppLog.d(TAG, "resolving antipode (${"%.3f".format(antipode.lat)}, ${"%.3f".format(antipode.lon)}), skipping $skip")
         geocoding.countryAt(antipode)?.takeIf { it !in skip }?.let { iso -> toResolved(iso, 0.0)?.let { return it } }
-        Log.d(TAG, "antipode is not on usable land, searching outward for the nearest country")
+        AppLog.d(TAG, "antipode is not on usable land, searching outward for the nearest country")
 
         for (ring in expandingSearchRings(antipode)) {
-            Log.d(TAG, "ring ${ring.radiusKm.roundToInt()} km: geocoding ${ring.points.size} points")
+            AppLog.d(TAG, "ring ${ring.radiusKm.roundToInt()} km: geocoding ${ring.points.size} points")
             val hits = coroutineScope {
                 ring.points
                     .map { p -> async { geocoding.countryAt(p)?.let { iso -> iso to haversineKm(antipode, p) } } }
@@ -157,10 +156,10 @@ class AntipodeResolver(private val geocoding: Geocoding) {
                     .filter { it.first !in skip }
             }
             val nearest = hits.minByOrNull { it.second } ?: continue
-            Log.d(TAG, "ring ${ring.radiusKm.roundToInt()} km: found ${nearest.first} at ${nearest.second.roundToInt()} km")
+            AppLog.d(TAG, "ring ${ring.radiusKm.roundToInt()} km: found ${nearest.first} at ${nearest.second.roundToInt()} km")
             toResolved(nearest.first, nearest.second)?.let { return it }
         }
-        Log.w(TAG, "no land found within ${DEFAULT_SEARCH_RADII_KM.last().roundToInt()} km of the antipode")
+        AppLog.w(TAG, "no land found within ${DEFAULT_SEARCH_RADII_KM.last().roundToInt()} km of the antipode")
         return null
     }
 
