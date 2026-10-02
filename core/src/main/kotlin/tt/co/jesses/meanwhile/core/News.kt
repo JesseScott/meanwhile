@@ -6,6 +6,11 @@ import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerialName
@@ -175,13 +180,38 @@ class InMemoryNewsCacheStore : NewsCacheStore {
     }
 }
 
-/** Serves fresh cache hits, and falls back to a stale entry when the upstream call fails. */
+/**
+ * Serves fresh cache hits, and falls back to a stale entry when the upstream call fails. As a stream, a stale entry
+ * is shown straight away (marked as still refreshing) while the live sources answer, and the cache is only
+ * written once they have all finished.
+ */
 class CachingNewsSource(
     private val delegate: NewsSource,
     private val store: NewsCacheStore,
     private val ttlMs: Long = 20 * 60 * 1000,
     private val clock: () -> Long = System::currentTimeMillis,
-) : NewsSource {
+) : StreamingNewsSource {
+    override fun headlinesFlow(place: NewsPlace): Flow<NewsProgress> = flow {
+        val key = place.fips
+        val cached = store.get(key)
+        if (cached != null && clock() - cached.savedAt < ttlMs) {
+            Trace.log { "cache HIT $key (${cached.articles.size} articles, ${(clock() - cached.savedAt) / 1000}s old)" }
+            emit(NewsProgress(cached.toResult(), 0))
+            return@flow
+        }
+        Trace.log { "cache ${if (cached == null) "MISS" else "STALE"} $key" }
+        // A stale entry beats a blank screen while the refresh runs.
+        if (cached != null) emit(NewsProgress(cached.toResult(), 1))
+        emitAll(
+            delegate.stream(place)
+                .onEach { if (it.done) store.put(key, CacheEntry(clock(), it.result.window, it.result.articles)) }
+                .catch { e ->
+                    Trace.log { "fetch failed for $key: ${e::class.simpleName}: ${e.message}; ${if (cached != null) "keeping stale cache" else "no cache to fall back on"}" }
+                    if (cached != null) emit(NewsProgress(cached.toResult(), 0)) else throw e
+                },
+        )
+    }
+
     override suspend fun headlines(place: NewsPlace): NewsResult {
         val key = place.fips
         val cached = store.get(key)
