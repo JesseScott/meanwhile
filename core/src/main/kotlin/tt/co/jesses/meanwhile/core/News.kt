@@ -115,11 +115,11 @@ class GdeltNewsSource(
             Trace.log { "$label -> HTTP ${status.value}, ${body.length} chars" }
             when (status) {
                 HttpStatusCode.OK -> {
-                    // Block misfiled outlets before counting, so a feed padded with them still falls back to 7d.
+                    // Drop misfiled outlets before counting, so a feed padded with them still falls back to 7d.
                     val articles = parseArtList(body)
                         .filter { it.title.isNotBlank() }
                         .distinctBy { it.title }
-                        .withoutBlocked(fips)
+                        .withoutMisfiled(fips)
                     Trace.log { "$label parsed ${articles.size} articles" }
                     return articles
                 }
