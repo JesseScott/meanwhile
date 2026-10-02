@@ -68,6 +68,18 @@ class LanguageFitTest {
     }
 
     @Test
+    fun realMadagascarResponseIsCleanedByTheLanguageRuleAlone() {
+        val articles = parseArtList(REAL_MADAGASCAR_SAMPLE)
+
+        // The language labels GDELT actually used; the rule's table has to spell them the same way.
+        assertEquals(setOf("Chinese", "French"), articles.map { it.language }.toSet())
+
+        // No blocklist involved: language alone removes the Taiwanese site.
+        val kept = articles.withoutLanguageMisfits("MA")
+        assertEquals(listOf("madagascar-tribune.com", "madagascar-tribune.com", "newsmada.com"), kept.map { it.domain })
+    }
+
+    @Test
     fun theTableIsKeyedByFipsNotIsoCodes() {
         // ISO to FIPS differs for these, so a table keyed by ISO would silently never match GDELT's codes.
         val expectedKeys = setOf("MA", "TN", "WS", "NE", "FM", "TV", "CK", "LY", "MJ", "AV", "CO")
@@ -75,3 +87,17 @@ class LanguageFitTest {
         assertTrue("MG" !in EXPECTED_LANGUAGES.keys, "MG is Madagascar's ISO code; GDELT uses MA")
     }
 }
+
+/**
+ * Trimmed from a live DOC API response for sourcecountry:MA on 2026-10-01. That day 124 of the 127 articles
+ * were from storm.mg, a Taiwanese site filed under Madagascar because of its .mg suffix.
+ */
+private val REAL_MADAGASCAR_SAMPLE = """
+{"articles": [
+ {"url": "https://www.storm.mg/article/11168882", "title": "指數創高手中個股卻原地踏步 徐黎芳提醒高檔震盪別只看漲跌更要先寫好退場劇本 | 楊艾喬 | 地方新聞", "seendate": "20261001T044500Z", "domain": "storm.mg", "language": "Chinese", "sourcecountry": "Madagascar"},
+ {"url": "https://www.storm.mg/lifestyle/11168894", "title": "日本韓國都輸了 ！ 台灣富裕排名 「 全球第5名 」， 人均財富驚人數字曝光 | 陳得馥 | 風生活", "seendate": "20261001T044500Z", "domain": "storm.mg", "language": "Chinese", "sourcecountry": "Madagascar"},
+ {"url": "https://www.madagascar-tribune.com/Le-projet-Volobe-Amont-se-concretise-avec-127-MW-d-electricite-attendus.html", "title": "Centrale hydroélectrique : le projet Volobe Amont se concrétise avec 127 MW", "seendate": "20261001T070000Z", "domain": "madagascar-tribune.com", "language": "French", "sourcecountry": "Madagascar"},
+ {"url": "https://www.madagascar-tribune.com/L-ancienne-ministre-de-l-Education-nationale-condamnee-a-cinq-ans-pour-atteinte.html", "title": "L'ancienne ministre de l'Education nationale condamnée à cinq ans", "seendate": "20261001T070000Z", "domain": "madagascar-tribune.com", "language": "French", "sourcecountry": "Madagascar"},
+ {"url": "https://newsmada.com/2026/10/01/diplomatie-madagascar-ouvrira-une-ambassade-en-egypte/", "title": "Diplomatie : Madagascar ouvrira une ambassade en Egypte – Newsmada", "seendate": "20261001T061500Z", "domain": "newsmada.com", "language": "French", "sourcecountry": "Madagascar"}
+]}
+""".trimIndent()
