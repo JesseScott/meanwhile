@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import tt.co.jesses.meanwhile.core.CachingNewsSource
 import tt.co.jesses.meanwhile.core.FallbackNewsSource
 import tt.co.jesses.meanwhile.core.GdeltNewsSource
@@ -116,7 +117,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         loadJob?.cancel()
         _state.update { it.copy(status = Status.Loading, error = null, notice = null, progress = Progress.Locating) }
         loadJob = viewModelScope.launch {
-            val here = location.current()
+            val here = withTimeoutOrNull(LOCATION_TIMEOUT_MS) { location.current() }
             if (here == null) {
                 _state.update { it.copy(status = Status.Error, error = UiError.LocationUnavailable) }
             } else {
@@ -324,5 +325,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         const val MAX_ARTICLES = 100
         const val MAX_COUNTRY_ATTEMPTS = 3
         const val ASK_DELAY_MS = 5_000L
+        const val LOCATION_TIMEOUT_MS = 20_000L
     }
 }

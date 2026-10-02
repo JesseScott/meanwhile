@@ -5,7 +5,13 @@ import android.text.format.DateUtils
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -75,7 +81,7 @@ import kotlin.math.roundToInt
 /** The label the view model gives a place that came from the device's location. */
 private const val YOUR_LOCATION = "Your location"
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun MeanwhileScreen(
     state: UiState,
@@ -84,11 +90,15 @@ fun MeanwhileScreen(
     onOpenAbout: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize()) {
         // Everything above the results stays put; only the results scroll, and pulling them down refreshes.
+        // With big text or a small screen it would fill the phone, so it is capped and scrolls on its own.
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(max = this@BoxWithConstraints.maxHeight * 0.5f)
+                .verticalScroll(rememberScrollState())
                 .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -140,6 +150,7 @@ fun MeanwhileScreen(
             }
         }
     }
+    }
 }
 
 @Composable
@@ -156,6 +167,7 @@ private fun ModeSwitch(mode: ViewMode, onSetMode: (ViewMode) -> Unit) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Controls(onSearch: (String) -> Unit, onUseLocation: () -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
@@ -166,7 +178,7 @@ private fun Controls(onSearch: (String) -> Unit, onUseLocation: () -> Unit) {
         label = { Text("Try a different place") },
         singleLine = true,
     )
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Button(onClick = { onSearch(query) }, enabled = query.isNotBlank()) { Text("Search") }
         OutlinedButton(onClick = onUseLocation) { Text("Use my location") }
     }
