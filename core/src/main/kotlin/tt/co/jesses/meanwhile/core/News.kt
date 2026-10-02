@@ -33,6 +33,8 @@ data class Article(
     val domain: String = "",
     val language: String = "",
     @SerialName("sourcecountry") val sourceCountry: String = "",
+    /** Which source produced this article ("gdelt", "rss", "gnews"). Empty in older cache files. */
+    val via: String = "",
 )
 
 private val SEEN_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'")
@@ -62,9 +64,12 @@ fun List<Article>.capPerDomain(max: Int): List<Article> {
 
 data class NewsResult(val articles: List<Article>, val window: String)
 
+/** A country to fetch headlines for, as the nearest land to an antipode. Sources use whichever fields they need. */
+data class NewsPlace(val iso: String, val fips: String, val name: String)
+
 interface NewsSource {
-    /** Headlines published in the country with this FIPS code. */
-    suspend fun headlines(fips: String): NewsResult
+    /** Headlines for [place]: published there or about it, depending on the source. */
+    suspend fun headlines(place: NewsPlace): NewsResult
 }
 
 /**
@@ -82,7 +87,8 @@ class GdeltNewsSource(
     private val gate = Mutex()
     private var lastCallAt = 0L
 
-    override suspend fun headlines(fips: String): NewsResult {
+    override suspend fun headlines(place: NewsPlace): NewsResult {
+        val fips = place.fips
         val day = fetch(fips, "24h")
         if (day.size >= minArticles) return NewsResult(day, "24h")
         // Widening is a bonus; if it fails (GDELT rate limits hard), keep what the day gave us.
@@ -120,6 +126,7 @@ class GdeltNewsSource(
                         .filter { it.title.isNotBlank() }
                         .distinctBy { it.title }
                         .withoutMisfiled(fips)
+                        .map { it.copy(via = VIA) }
                     Trace.log { "$label parsed ${articles.size} articles" }
                     return articles
                 }
@@ -127,10 +134,10 @@ class GdeltNewsSource(
                     Trace.log { "$label rate limited, waiting ${retryDelayMs} ms" }
                     delay(retryDelayMs)
                 }
-                else -> error("GDELT returned ${status.value}")
+                else -> throw SourceFailedException("GDELT", "HTTP ${status.value}")
             }
         }
-        error("GDELT is rate limiting requests, try again shortly")
+        throw RateLimitedException("GDELT")
     }
 
     private suspend fun <T> throttled(label: String, block: suspend () -> T): T = gate.withLock {
@@ -148,6 +155,7 @@ class GdeltNewsSource(
 
     private companion object {
         const val MAX_ATTEMPTS = 3
+        const val VIA = "gdelt"
     }
 }
 
@@ -174,19 +182,20 @@ class CachingNewsSource(
     private val ttlMs: Long = 20 * 60 * 1000,
     private val clock: () -> Long = System::currentTimeMillis,
 ) : NewsSource {
-    override suspend fun headlines(fips: String): NewsResult {
-        val cached = store.get(fips)
+    override suspend fun headlines(place: NewsPlace): NewsResult {
+        val key = place.fips
+        val cached = store.get(key)
         if (cached != null && clock() - cached.savedAt < ttlMs) {
-            Trace.log { "cache HIT $fips (${cached.articles.size} articles, ${(clock() - cached.savedAt) / 1000}s old)" }
+            Trace.log { "cache HIT $key (${cached.articles.size} articles, ${(clock() - cached.savedAt) / 1000}s old)" }
             return cached.toResult()
         }
-        Trace.log { "cache ${if (cached == null) "MISS" else "STALE"} $fips" }
+        Trace.log { "cache ${if (cached == null) "MISS" else "STALE"} $key" }
         return try {
-            delegate.headlines(fips).also { store.put(fips, CacheEntry(clock(), it.window, it.articles)) }
+            delegate.headlines(place).also { store.put(key, CacheEntry(clock(), it.window, it.articles)) }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Trace.log { "fetch failed for $fips: ${e::class.simpleName}: ${e.message}; ${if (cached != null) "serving stale cache" else "no cache to fall back on"}" }
+            Trace.log { "fetch failed for $key: ${e::class.simpleName}: ${e.message}; ${if (cached != null) "serving stale cache" else "no cache to fall back on"}" }
             cached?.toResult() ?: throw e
         }
     }

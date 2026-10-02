@@ -12,6 +12,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class GdeltNewsSourceTest {
+    private val madagascar = NewsPlace("MG", "MA", "Madagascar")
+    private val nz = NewsPlace("NZ", "NZ", "New Zealand")
+
     private fun json(articles: List<Triple<String, String, String>>): String =
         articles.joinToString(prefix = """{"articles":[""", postfix = "]}", separator = ",") { (domain, language, title) ->
             """{"url":"https://$domain/$title","title":"$title","seendate":"20261001T000000Z","domain":"$domain","language":"$language","sourcecountry":"Madagascar"}"""
@@ -44,7 +47,7 @@ class GdeltNewsSourceTest {
             calls = calls,
         )
 
-        val result = source.headlines("MA")
+        val result = source.headlines(madagascar)
 
         assertEquals(listOf("sourcecountry:MA 24h", "sourcecountry:MA 7d"), calls)
         assertEquals("7d", result.window)
@@ -57,11 +60,29 @@ class GdeltNewsSourceTest {
         val calls = mutableListOf<String>()
         val source = source("24h" to json(french(20, "d")), "7d" to json(french(50, "w")), calls = calls)
 
-        val result = source.headlines("MA")
+        val result = source.headlines(madagascar)
 
         assertEquals(listOf("sourcecountry:MA 24h"), calls)
         assertEquals("24h", result.window)
         assertEquals(20, result.articles.size)
+    }
+
+    @Test
+    fun keepsRateLimitingTypedAndFreeOfUserFacingDetail() = runTest {
+        val engine = MockEngine {
+            respond(content = "Please limit requests", status = HttpStatusCode.TooManyRequests, headers = headersOf(HttpHeaders.ContentType, "text/plain"))
+        }
+        val source = GdeltNewsSource(HttpClient(engine), minIntervalMs = 0, retryDelayMs = 0)
+
+        val error = kotlin.test.assertFailsWith<RateLimitedException> { source.headlines(madagascar) }
+
+        assertEquals("GDELT", error.source)
+    }
+
+    @Test
+    fun marksEveryArticleAsComingFromGdelt() = runTest {
+        val source = source("24h" to json(french(20, "d")), "7d" to json(french(1, "w")), calls = mutableListOf())
+        assertEquals(setOf("gdelt"), source.headlines(madagascar).articles.map { it.via }.toSet())
     }
 
     @Test
@@ -70,7 +91,7 @@ class GdeltNewsSourceTest {
         val mixed = List(20) { Triple("nzherald.co.nz", if (it % 2 == 0) "English" else "Chinese", "t$it") }
         val source = source("24h" to json(mixed), "7d" to json(mixed), calls = calls)
 
-        val result = source.headlines("NZ")
+        val result = source.headlines(nz)
 
         assertEquals(20, result.articles.size)
         assertEquals(listOf("sourcecountry:NZ 24h"), calls)

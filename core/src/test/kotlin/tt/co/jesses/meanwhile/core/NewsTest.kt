@@ -5,6 +5,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class NewsTest {
+    private val nz = NewsPlace("NZ", "NZ", "New Zealand")
+
     private val sample = """
         {"articles": [
           {"url":"https://a.example/1","url_mobile":"","title":"One","seendate":"20260930T143000Z","socialimage":"","domain":"a.example","language":"English","sourcecountry":"New Zealand"},
@@ -45,7 +47,7 @@ class NewsTest {
         var calls = 0
         var fail = false
         val upstream = object : NewsSource {
-            override suspend fun headlines(fips: String): NewsResult {
+            override suspend fun headlines(place: NewsPlace): NewsResult {
                 calls++
                 if (fail) error("boom")
                 return NewsResult(parseArtList(sample), "24h")
@@ -53,14 +55,14 @@ class NewsTest {
         }
         val source = CachingNewsSource(upstream, InMemoryNewsCacheStore(), ttlMs = 1000, clock = { now })
 
-        source.headlines("NZ")
+        source.headlines(nz)
         now = 500
-        source.headlines("NZ")
+        source.headlines(nz)
         assertEquals(1, calls)
 
         now = 5000
         fail = true
-        assertEquals(3, source.headlines("NZ").articles.size)
+        assertEquals(3, source.headlines(nz).articles.size)
         assertEquals(2, calls)
     }
 }

@@ -16,12 +16,16 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import tt.co.jesses.meanwhile.core.Article
 import tt.co.jesses.meanwhile.core.CachingNewsSource
+import tt.co.jesses.meanwhile.core.FallbackNewsSource
 import tt.co.jesses.meanwhile.core.GdeltNewsSource
+import tt.co.jesses.meanwhile.core.GoogleNewsSource
 import tt.co.jesses.meanwhile.core.LatLon
 import tt.co.jesses.meanwhile.core.MarineConditions
 import tt.co.jesses.meanwhile.core.MarineSource
+import tt.co.jesses.meanwhile.core.NewsPlace
 import tt.co.jesses.meanwhile.core.NewsSource
 import tt.co.jesses.meanwhile.core.OpenMeteoMarineSource
+import tt.co.jesses.meanwhile.core.RssNewsSource
 import tt.co.jesses.meanwhile.core.Trace
 import tt.co.jesses.meanwhile.core.antipode
 import tt.co.jesses.meanwhile.core.capPerDomain
@@ -70,8 +74,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             requestTimeoutMillis = 90_000
         }
     }
+    // Every source gets a turn at the nearest place before the app gives up and moves farther away:
+    // GDELT (published there), curated outlet feeds, then Google News search (about there).
     private val news: NewsSource = CachingNewsSource(
-        delegate = GdeltNewsSource(http),
+        delegate = FallbackNewsSource(listOf(GdeltNewsSource(http), RssNewsSource(http), GoogleNewsSource(http))),
         store = FileNewsCacheStore(File(app.cacheDir, "news")),
     )
     private val marine: MarineSource = OpenMeteoMarineSource(http)
@@ -172,7 +178,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 _state.update {
                     it.copy(country = country, progress = "Fetching headlines from ${country.name}… the first load can take up to 30 seconds.")
                 }
-                val result = news.headlines(country.fips)
+                val result = news.headlines(NewsPlace(country.iso, country.fips, country.name))
                 // Filtered here, not at fetch time, so cached results and newly added entries are covered too.
                 val articles = result.articles.withoutMisfiled(country.fips)
                 Log.d(TAG, "load: ${country.name} gave ${result.articles.size} articles (${articles.size} after misfile filters, ${result.window}), ${(System.nanoTime() - loadStart) / 1_000_000} ms in")
