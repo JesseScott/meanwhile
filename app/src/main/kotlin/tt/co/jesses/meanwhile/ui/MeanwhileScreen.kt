@@ -193,7 +193,14 @@ private fun StatusLine(state: UiState, onTryAgain: () -> Unit, onOpenSettings: (
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
-        Status.Ready -> Unit
+        // Headlines are already on screen; say that more may still arrive.
+        Status.Ready -> if (state.loadingMore) Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+            Text(state.progress?.text() ?: "Checking for more…", style = MaterialTheme.typography.bodyMedium)
+        }
     }
     state.notice?.let { notice ->
         Text(

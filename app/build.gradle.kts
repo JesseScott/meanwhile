@@ -43,6 +43,8 @@ kotlin {
 }
 
 dependencies {
+    testImplementation(libs.kotlin.test)
+
     // Ktor's OkHttp engine pulls OkHttp 5.5, which needs compileSdk 37 (and so AGP 9). Hold it
     // back until the project moves to AGP 9.
     constraints {

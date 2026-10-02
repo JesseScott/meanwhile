@@ -23,6 +23,9 @@ sealed interface Progress {
     data class FetchingHeadlines(val country: String) : Progress
     data object ReadingSea : Progress
     data class TryingNext(val previous: String) : Progress
+
+    /** Headlines are already showing, and other sources are still answering. */
+    data object CheckingMore : Progress
 }
 
 /** Why a load failed outright, and nothing about which service failed. */
@@ -55,6 +58,8 @@ data class UiState(
     val progress: Progress? = null,
     /** A pull-to-refresh or retry is running over content that stays on screen. */
     val isRefreshing: Boolean = false,
+    /** Headlines are showing, but some sources haven't answered yet and more may be added. */
+    val loadingMore: Boolean = false,
 )
 
 /** True when the antipode is open water, so the user can choose between nearest land and the sea. */

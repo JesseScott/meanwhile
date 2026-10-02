@@ -18,6 +18,7 @@ fun Progress.text(): String = when (this) {
     is Progress.FetchingHeadlines -> "Fetching headlines from $country… this can take up to a minute the first time."
     Progress.ReadingSea -> "Reading the sea…"
     is Progress.TryingNext -> "$previous had no headlines, trying the next closest country…"
+    Progress.CheckingMore -> "Checking for more headlines…"
 }
 
 fun UiError.text(): String = when (this) {

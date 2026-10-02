@@ -35,8 +35,7 @@ import tt.co.jesses.meanwhile.core.Telemetry
 import tt.co.jesses.meanwhile.core.TelemetryEvent
 import tt.co.jesses.meanwhile.core.Trace
 import tt.co.jesses.meanwhile.core.antipode
-import tt.co.jesses.meanwhile.core.capPerDomain
-import tt.co.jesses.meanwhile.core.cleaned
+import tt.co.jesses.meanwhile.core.stream
 import java.io.File
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
@@ -239,20 +238,24 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 }
 
                 _state.update { it.copy(country = country, progress = Progress.FetchingHeadlines(country.name)) }
-                val result = news.headlines(NewsPlace(country.iso, country.fips, country.name))
-                // Cleaned here, not at fetch time, so cached results and newly added rules are covered too.
-                val articles = result.articles.cleaned(country.fips)
-                AppLog.d(TAG, "load: ${country.name} gave ${result.articles.size} articles (${articles.size} after cleaning, ${result.window}), ${(System.nanoTime() - loadStart) / 1_000_000} ms in")
-                if (articles.isNotEmpty()) {
-                    _state.update {
-                        it.copy(
-                            status = Status.Ready,
-                            articles = articles.capPerDomain(MAX_PER_DOMAIN).take(MAX_ARTICLES),
-                            window = result.window,
-                            isRefreshing = false,
-                            error = null,
-                        )
+
+                // Results show as each source answers; cleaning happens per snapshot, so cached results and newly
+                // added rules are covered too.
+                var shown = false
+                news.stream(NewsPlace(country.iso, country.fips, country.name)).collect { progress ->
+                    AppLog.d(TAG, "load: ${country.name} snapshot ${progress.result.articles.size} articles, ${progress.pending} sources pending, ${(System.nanoTime() - loadStart) / 1_000_000} ms in")
+                    // The reducer hands back the same state when a snapshot has nothing worth showing.
+                    val current = _state.value
+                    val next = current.withNewsProgress(progress, country.fips, MAX_PER_DOMAIN, MAX_ARTICLES)
+                    if (next !== current) {
+                        shown = true
+                        _state.value = next
                     }
+                }
+                _state.update { it.withNewsFinished() }
+                if (shown) {
+                    val articles = _state.value.articles
+                    AppLog.d(TAG, "load: ${country.name} finished with ${articles.size} articles, ${(System.nanoTime() - loadStart) / 1_000_000} ms in")
                     telemetry.log(
                         TelemetryEvent.LoadFinished(
                             water = water, showingOcean = false, kind = kind.telemetryName(), articles = articles.size,
