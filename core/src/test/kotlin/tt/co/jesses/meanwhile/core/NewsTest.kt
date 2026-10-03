@@ -53,7 +53,7 @@ class NewsTest {
                 return NewsResult(parseArtList(sample), "24h")
             }
         }
-        val source = CachingNewsSource(upstream, InMemoryNewsCacheStore(), ttlMs = 1000, clock = { now })
+        val source = CachingNewsSource(upstream, InMemoryNewsCacheStore(), coolDownMs = 1000, clock = { now })
 
         source.headlines(nz)
         now = 500

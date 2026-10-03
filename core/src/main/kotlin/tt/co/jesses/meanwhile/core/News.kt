@@ -181,32 +181,40 @@ class InMemoryNewsCacheStore : NewsCacheStore {
 }
 
 /**
- * Serves fresh cache hits, and falls back to a stale entry when the upstream call fails. As a stream, a stale entry
- * is shown straight away (marked as still refreshing) while the live sources answer, and the cache is only
- * written once they have all finished.
+ * The cache is what you see while the real answer loads, not a promise that it is still right. An entry of any age
+ * under [maxAgeMs] is shown straight away (marked as still refreshing) while the live sources answer, and the
+ * live answer replaces it. Only two things stop a fetch: an entry younger than [coolDownMs], which is served as
+ * is so that rotating the phone or flipping views doesn't hammer the sources, and a failure, which keeps the
+ * old entry on screen. An entry older than [maxAgeMs] is ignored, since very old headlines would mislead.
+ * The cache is written only once every source has finished.
  */
 class CachingNewsSource(
     private val delegate: NewsSource,
     private val store: NewsCacheStore,
-    private val ttlMs: Long = 20 * 60 * 1000,
+    private val coolDownMs: Long = 2 * 60 * 1000,
+    private val maxAgeMs: Long = 3 * 24 * 60 * 60 * 1000,
     private val clock: () -> Long = System::currentTimeMillis,
 ) : StreamingNewsSource {
+    /** The stored entry for [key], unless it is too old to show. */
+    private suspend fun usable(key: String): CacheEntry? =
+        store.get(key)?.takeIf { clock() - it.savedAt < maxAgeMs }
+
     override fun headlinesFlow(place: NewsPlace): Flow<NewsProgress> = flow {
         val key = place.fips
-        val cached = store.get(key)
-        if (cached != null && clock() - cached.savedAt < ttlMs) {
+        val cached = usable(key)
+        if (cached != null && clock() - cached.savedAt < coolDownMs) {
             Trace.log { "cache HIT $key (${cached.articles.size} articles, ${(clock() - cached.savedAt) / 1000}s old)" }
             emit(NewsProgress(cached.toResult(), 0))
             return@flow
         }
-        Trace.log { "cache ${if (cached == null) "MISS" else "STALE"} $key" }
-        // A stale entry beats a blank screen while the refresh runs.
+        Trace.log { "cache ${if (cached == null) "MISS" else "REVALIDATE"} $key" }
+        // An old entry beats a blank screen while the refresh runs.
         if (cached != null) emit(NewsProgress(cached.toResult(), 1))
         emitAll(
             delegate.stream(place)
                 .onEach { if (it.done) store.put(key, CacheEntry(clock(), it.result.window, it.result.articles)) }
                 .catch { e ->
-                    Trace.log { "fetch failed for $key: ${e::class.simpleName}: ${e.message}; ${if (cached != null) "keeping stale cache" else "no cache to fall back on"}" }
+                    Trace.log { "fetch failed for $key: ${e::class.simpleName}: ${e.message}; ${if (cached != null) "keeping cached entry" else "no cache to fall back on"}" }
                     if (cached != null) emit(NewsProgress(cached.toResult(), 0)) else throw e
                 },
         )
@@ -214,18 +222,18 @@ class CachingNewsSource(
 
     override suspend fun headlines(place: NewsPlace): NewsResult {
         val key = place.fips
-        val cached = store.get(key)
-        if (cached != null && clock() - cached.savedAt < ttlMs) {
+        val cached = usable(key)
+        if (cached != null && clock() - cached.savedAt < coolDownMs) {
             Trace.log { "cache HIT $key (${cached.articles.size} articles, ${(clock() - cached.savedAt) / 1000}s old)" }
             return cached.toResult()
         }
-        Trace.log { "cache ${if (cached == null) "MISS" else "STALE"} $key" }
+        Trace.log { "cache ${if (cached == null) "MISS" else "REVALIDATE"} $key" }
         return try {
             delegate.headlines(place).also { store.put(key, CacheEntry(clock(), it.window, it.articles)) }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Trace.log { "fetch failed for $key: ${e::class.simpleName}: ${e.message}; ${if (cached != null) "serving stale cache" else "no cache to fall back on"}" }
+            Trace.log { "fetch failed for $key: ${e::class.simpleName}: ${e.message}; ${if (cached != null) "serving cached entry" else "no cache to fall back on"}" }
             cached?.toResult() ?: throw e
         }
     }

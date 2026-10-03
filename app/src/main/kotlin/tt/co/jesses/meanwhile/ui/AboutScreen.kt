@@ -122,7 +122,7 @@ fun AboutScreen(onBack: () -> Unit) {
                         "reports. Turning the switch off again stops the reports and clears the ID.",
                 )
                 Bullet(
-                    "Headlines are kept on your phone for about 20 minutes per country to speed things up. " +
+                    "Headlines are kept on your phone for up to three days per country, so something shows straight away while fresh headlines load. " +
                         "Clearing the app's cache removes them. The app also remembers that you have seen its welcome screen, your " +
                         "choice about the reports below, and a count of how often it has worked and asked, so that it doesn't ask too often.",
                 )

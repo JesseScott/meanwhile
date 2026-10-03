@@ -37,7 +37,7 @@ class CachingStreamTest {
     @Test
     fun aFreshEntryIsServedAsOneFinishedSnapshotWithoutAskingTheSource() = runTest {
         val source = Playback(listOf(NewsProgress(result("live"), 0)))
-        val cache = CachingNewsSource(source, store(savedAt = 900, "cached"), ttlMs = 1_000, clock = { 1_000 })
+        val cache = CachingNewsSource(source, store(savedAt = 900, "cached"), coolDownMs = 1_000, clock = { 1_000 })
 
         val snapshots = cache.headlinesFlow(place).toList()
 
@@ -48,7 +48,7 @@ class CachingStreamTest {
     @Test
     fun aStaleEntryIsShownAtOnceWhileTheRefreshRuns() = runTest {
         val source = Playback(listOf(NewsProgress(result("live-1"), 1), NewsProgress(result("live-1", "live-2"), 0)))
-        val cache = CachingNewsSource(source, store(savedAt = 0, "old"), ttlMs = 1_000, clock = { 5_000 })
+        val cache = CachingNewsSource(source, store(savedAt = 0, "old"), coolDownMs = 1_000, clock = { 5_000 })
 
         val snapshots = cache.headlinesFlow(place).toList()
 
@@ -62,7 +62,7 @@ class CachingStreamTest {
     fun theCacheIsWrittenOnlyOnceEverySourceHasFinished() = runTest {
         val store = InMemoryNewsCacheStore()
         val source = Playback(listOf(NewsProgress(result("partial"), 1), NewsProgress(result("partial", "full"), 0)))
-        val cache = CachingNewsSource(source, store, ttlMs = 1_000, clock = { 7 })
+        val cache = CachingNewsSource(source, store, coolDownMs = 1_000, clock = { 7 })
 
         // Whether the cache already held an entry at the moment each snapshot reached the collector.
         val cachedWhenSeen = mutableListOf<Boolean>()
@@ -86,7 +86,7 @@ class CachingStreamTest {
     @Test
     fun whenTheRefreshFailsTheStaleEntryIsKeptAsTheFinalResult() = runTest {
         val source = Playback(emptyList(), error = NewsUnavailableException("Tonga", emptyList()))
-        val cache = CachingNewsSource(source, store(savedAt = 0, "old"), ttlMs = 1_000, clock = { 5_000 })
+        val cache = CachingNewsSource(source, store(savedAt = 0, "old"), coolDownMs = 1_000, clock = { 5_000 })
 
         val snapshots = cache.headlinesFlow(place).toList()
 
@@ -101,6 +101,36 @@ class CachingStreamTest {
         val error = assertFailsWith<NewsUnavailableException> { cache.headlinesFlow(place).toList() }
 
         assertEquals(NewsFailure.RateLimited, error.reason)
+    }
+
+    @Test
+    fun anEntryOlderThanTheMaxAgeIsIgnoredNotShown() = runTest {
+        val source = Playback(listOf(NewsProgress(result("live"), 0)))
+        val cache = CachingNewsSource(source, store(savedAt = 0, "ancient"), coolDownMs = 1_000, maxAgeMs = 10_000, clock = { 10_000 })
+
+        val snapshots = cache.headlinesFlow(place).toList()
+
+        assertEquals(listOf(listOf("live") to 0), snapshots.map { titles(it) to it.pending })
+    }
+
+    @Test
+    fun anOldButUsableEntryIsShownThenReplacedEvenAfterManyHours() = runTest {
+        val hours = 6 * 60 * 60 * 1000L
+        val source = Playback(listOf(NewsProgress(result("live"), 0)))
+        val cache = CachingNewsSource(source, store(savedAt = 0, "yesterday"), clock = { hours })
+
+        val snapshots = cache.headlinesFlow(place).toList()
+
+        assertEquals(listOf(listOf("yesterday") to 1, listOf("live") to 0), snapshots.map { titles(it) to it.pending })
+        assertEquals(1, source.calls)
+    }
+
+    @Test
+    fun aTooOldEntryWithAFailingSourceGivesTheErrorNotStaleNews() = runTest {
+        val source = Playback(emptyList(), error = NewsUnavailableException("Tonga", emptyList()))
+        val cache = CachingNewsSource(source, store(savedAt = 0, "ancient"), maxAgeMs = 1_000, clock = { 5_000 })
+
+        assertFailsWith<NewsUnavailableException> { cache.headlinesFlow(place).toList() }
     }
 
     @Test
