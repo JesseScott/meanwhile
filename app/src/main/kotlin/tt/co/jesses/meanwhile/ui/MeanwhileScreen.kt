@@ -24,6 +24,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.Surface
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -41,12 +43,14 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import tt.co.jesses.meanwhile.ResolvedCountry
@@ -59,6 +63,8 @@ import tt.co.jesses.meanwhile.ViewMode
 import tt.co.jesses.meanwhile.antipodeIsWater
 import tt.co.jesses.meanwhile.core.Article
 import tt.co.jesses.meanwhile.core.DayPhase
+import tt.co.jesses.meanwhile.core.Recency
+import tt.co.jesses.meanwhile.core.groupedByRecency
 import tt.co.jesses.meanwhile.core.LatLon
 import tt.co.jesses.meanwhile.core.MarineConditions
 import tt.co.jesses.meanwhile.core.TelemetryEvent
@@ -72,6 +78,7 @@ import tt.co.jesses.meanwhile.core.seenInstant
 import tt.co.jesses.meanwhile.core.sunAltitudeDeg
 import tt.co.jesses.meanwhile.showingOcean
 import java.time.Instant
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -90,6 +97,8 @@ fun MeanwhileScreen(
     onOpenAbout: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
+    // Headlines sit under Today / Yesterday / Earlier headings; a late arrival slots into its own day.
+    val groups = remember(state.articles) { state.articles.groupedByRecency(Instant.now(), ZoneId.systemDefault()) }
     BoxWithConstraints(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize()) {
         // Everything above the results stays put; only the results scroll, and pulling them down refreshes.
@@ -138,13 +147,16 @@ fun MeanwhileScreen(
                     if (state.showingOcean) {
                         item { OceanCard(state) }
                     } else {
-                        if (state.window == "7d") {
+                        if (state.window == "7d" && groups.firstOrNull()?.first != Recency.Today) {
                             item { Text("Quiet there today, so this shows the last week.", style = MaterialTheme.typography.bodySmall) }
                         }
                         if (state.articles.isEmpty()) {
                             item { Text("No headlines found for ${state.country?.name ?: "that region"}.") }
                         }
-                        items(state.articles, key = { it.url }) { ArticleRow(it) }
+                        groups.forEach { (recency, articles) ->
+                            item(key = "group-$recency") { RecencyHeading(recency) }
+                            items(articles, key = { it.url }) { ArticleRow(it) }
+                        }
                     }
                 }
             }
@@ -345,11 +357,30 @@ private fun Fact(label: String, value: String, detail: String?) {
     }
 }
 
+/** A day heading in the gold (tertiary) accent, with a rule running out to the edge. */
+@Composable
+private fun RecencyHeading(recency: Recency) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(
+            recency.text().uppercase(),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.tertiary,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.2.sp,
+        )
+        HorizontalDivider(Modifier.weight(1f))
+    }
+}
+
 @Composable
 private fun ArticleRow(article: Article) {
     val context = LocalContext.current
     val telemetry = LocalTelemetry.current
-    Card(
+    OutlinedCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
@@ -358,16 +389,31 @@ private fun ArticleRow(article: Article) {
                 runCatching { CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(article.url)) }
             },
     ) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(article.title, style = MaterialTheme.typography.titleMedium, maxLines = 4, overflow = TextOverflow.Ellipsis)
             val age = article.seenInstant()?.let {
                 DateUtils.getRelativeTimeSpanString(it.toEpochMilli(), System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS)
             }
-            Text(
-                listOfNotNull(article.domain.takeIf { it.isNotBlank() }, article.language.takeIf { it.isNotBlank() }, age?.toString())
-                    .joinToString(" · "),
-                style = MaterialTheme.typography.bodySmall,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    listOfNotNull(article.domain.takeIf { it.isNotBlank() }, article.language.takeIf { it.isNotBlank() }, age?.toString())
+                        .joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                // Headlines from an outlet in or about that place, as opposed to a worldwide wire.
+                if (article.via == "rss") {
+                    Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.secondaryContainer) {
+                        Text(
+                            "Local outlet",
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+                }
+            }
         }
     }
 }

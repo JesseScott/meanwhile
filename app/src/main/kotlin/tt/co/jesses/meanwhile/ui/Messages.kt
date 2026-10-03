@@ -3,6 +3,7 @@ package tt.co.jesses.meanwhile.ui
 import tt.co.jesses.meanwhile.Progress
 import tt.co.jesses.meanwhile.UiError
 import tt.co.jesses.meanwhile.UiNotice
+import tt.co.jesses.meanwhile.core.Recency
 
 /*
  * The only place user-facing wording for loads and failures lives. State carries typed values; these turn them
@@ -34,4 +35,10 @@ fun UiNotice.text(): String = when (this) {
     is UiNotice.NoPlaces -> "No places found for \"$query\"."
     UiNotice.LocationDenied -> "Location is off for Meanwhile. Search for a place, or turn it on in your phone's settings."
     UiNotice.RefreshFailed -> "Couldn't refresh. Showing what we had."
+}
+
+fun Recency.text(): String = when (this) {
+    Recency.Today -> "Today"
+    Recency.Yesterday -> "Yesterday"
+    Recency.Earlier -> "Earlier this week"
 }
