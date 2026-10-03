@@ -162,6 +162,13 @@ private fun ModeSwitch(mode: ViewMode, onSetMode: (ViewMode) -> Unit) {
                 selected = mode == value,
                 onClick = { onSetMode(value) },
                 shape = SegmentedButtonDefaults.itemShape(index, options.size),
+                // The default is the secondary (teal) container, which read as a second highlight colour.
+                // One accent for "selected" and "actionable" everywhere: the primary indigo.
+                colors = SegmentedButtonDefaults.colors(
+                    activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    activeBorderColor = MaterialTheme.colorScheme.primary,
+                ),
             ) { Text(label) }
         }
     }
