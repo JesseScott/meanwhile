@@ -107,4 +107,12 @@ class RssNewsSourceTest {
         assertTrue(tongaFeeds.any { "rnz.co.nz" in it.url && it.requirePlaceName })
         assertTrue(CURATED_FEEDS.getValue("WS").single().requirePlaceName)
     }
+
+    @Test
+    fun madagascarHasBackupFeedsOverHttps() {
+        val feeds = CURATED_FEEDS.getValue("MA")
+        assertTrue(feeds.size >= 3)
+        assertTrue(feeds.all { it.url.startsWith("https://") })
+        assertTrue(feeds.none { it.requirePlaceName }, "these are Madagascar feeds already, so no name filter")
+    }
 }
