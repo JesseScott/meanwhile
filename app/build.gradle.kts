@@ -25,6 +25,12 @@ val keystoreProperties = Properties().apply {
     if (file.exists()) file.inputStream().use { load(it) }
 }
 
+// One place for the version, so the AAB's file name always matches what is inside it
+// (app/build/outputs/bundle/release/meanwhile-0.1.0-1-release.aab). Bump versionCode for every Play upload.
+val appVersionName = "0.1.0"
+val appVersionCode = 1
+base.archivesName.set("meanwhile-$appVersionName-$appVersionCode")
+
 android {
     namespace = "tt.co.jesses.meanwhile"
     compileSdk = 36
@@ -33,8 +39,8 @@ android {
         applicationId = "tt.co.jesses.meanwhile"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
     }
 
     signingConfigs {
