@@ -1,8 +1,8 @@
-Meanwhile 0.1.0 (build 5)
+Meanwhile 0.1.0 (build 6)
 
 Thanks for testing!
 
-New: optional anonymous usage and crash reports (off by default), a steadier header, a more reliable location fix with a clear message if location is off, and "headlines are busy" instead of jumping to another country.
+New: optional anonymous usage and crash reports (off by default), a steadier header, a more reliable location fix with a clear message if location is off, and "headlines are busy" instead of jumping to another country. Try again now shows a fresh load.
 
 Try: location, search, ocean and land, pull to refresh, dark mode.
 
