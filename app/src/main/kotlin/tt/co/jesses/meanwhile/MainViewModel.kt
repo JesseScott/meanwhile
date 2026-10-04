@@ -221,8 +221,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     progress = Progress.FindingLand,
                     isRefreshing = false,
                 )
-                // Nothing is cleared: the old content stays until the new content replaces it.
-                LoadKind.Refresh -> it.copy(error = null, notice = null, isRefreshing = true)
+                // Nothing is cleared: the old content stays until the new content replaces it. But from an error
+                // screen there is no content to keep, so show a load in progress (and no stale error or Try again)
+                // instead of a pull-to-refresh spinner over a message that no longer applies.
+                LoadKind.Refresh ->
+                    if (it.status == Status.Error) {
+                        it.copy(status = Status.Loading, error = null, notice = null, progress = Progress.FindingLand, isRefreshing = false)
+                    } else {
+                        it.copy(error = null, notice = null, isRefreshing = true)
+                    }
             }
         }
         // Same place again, so the country is already known; skip looking it up (and the flicker that goes with it).
