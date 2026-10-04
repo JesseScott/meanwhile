@@ -1,8 +1,8 @@
-Meanwhile 0.1.0 (build 6)
+Meanwhile 0.1.0 (build 7)
 
 Thanks for testing!
 
-New: optional anonymous usage and crash reports (off by default), a steadier header, a more reliable location fix with a clear message if location is off, and "headlines are busy" instead of jumping to another country. Try again now shows a fresh load.
+New: backup local news feeds for Madagascar (a common first stop for the west coast of North America), optional anonymous usage and crash reports (off by default), a more reliable location fix, and "headlines are busy" instead of jumping to another country.
 
 Try: location, search, ocean and land, pull to refresh, dark mode.
 
