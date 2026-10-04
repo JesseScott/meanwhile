@@ -7,6 +7,9 @@
 
     <!-- Firebase Analytics adds the advertising ID permission by default. Meanwhile has no ads, so it doesn't want it. -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
+    <!-- Firebase Analytics also adds the Privacy Sandbox ad-attribution permissions, for the same reason. -->
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" tools:node="remove" />
 
     <application
         android:name=".MeanwhileApplication"
