@@ -1,9 +1,9 @@
-Meanwhile 0.1.0 (build 4)
+Meanwhile 0.1.0 (build 5)
 
-Thanks for testing! Meanwhile shows news, and the sea, from the exact opposite side of the world.
+Thanks for testing! News, and the sea, from the exact opposite side of the world.
 
-New: optional anonymous usage and crash reports (off unless you turn them on), a steadier header, and a clear "headlines are busy" message instead of jumping to another country.
+New: optional anonymous usage and crash reports (off by default), a steadier header, a more reliable location fix with a clear message if location is off, and "headlines are busy" instead of jumping to another country.
 
-Please try: location and search, switching ocean and nearest land, pull to refresh, dark mode.
+Try: location, search, ocean and land, pull to refresh, dark mode.
 
-Known rough edges: small places can have few headlines; titles stay in their original language.
+Rough edges: small places can have few headlines; titles stay in their original language.
