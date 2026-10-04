@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -337,23 +338,24 @@ private val MyLocationIcon: ImageVector by lazy {
 @Composable
 private fun Header(state: UiState, onOpenAbout: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        // The settings icon shares the title's row, so it lines up with "Meanwhile" and not with the middle of the
+        // title and tagline together. The tagline sits under the whole row.
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column {
-                Text("Meanwhile", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                Text(
-                    TAGLINE,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            Text("Meanwhile", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             IconButton(onClick = onOpenAbout) {
                 Icon(Icons.Filled.Settings, contentDescription = "About, privacy and licenses")
             }
         }
+        Text(
+            TAGLINE,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.offset(y = (-8).dp),
+        )
         val country = state.country
         val antipode = state.antipode
         if (country != null && antipode != null) {
