@@ -38,7 +38,7 @@ data class Article(
     val domain: String = "",
     val language: String = "",
     @SerialName("sourcecountry") val sourceCountry: String = "",
-    /** Which source produced this article ("gdelt", "rss", "gnews"). Empty in older cache files. */
+    /** Which source produced this article ("gdelt", "rss"). Empty in older cache files. */
     val via: String = "",
 )
 

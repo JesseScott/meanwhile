@@ -23,13 +23,12 @@ The first two are searched from Madrid (the opposite point is in New Zealand); t
 
 1. **Where you are.** Coarse location from Google Play services, or a place you search for. Nothing is stored and there is no account.
 2. **Your antipode.** Latitude negated, longitude shifted by 180°. If it lands on land, that country is used. If it lands on water, the app searches in widening rings (25 km out to 8,000 km) for the nearest country that has coverage.
-3. **Headlines.** Several sources run at once and results show as each one answers (typically a few seconds), not after the slowest one gives up:
+3. **Headlines.** Two sources run at once and results show as each one answers (typically a few seconds), not after the slowest one gives up:
 
    | Priority | Source | Used for |
    | --- | --- | --- |
    | 1 | [GDELT](https://www.gdeltproject.org) DOC API | Articles published in that country, last 24 hours, widening to 7 days if thin |
    | 2 | Curated outlet feeds (RSS) | Small Pacific nations GDELT barely covers (Tonga's Matangi Tonga, RNZ Pacific filtered by country, 20 places in all) |
-   | 3 | Google News RSS search | Articles *about* the country, as a last resort |
 
    Results are merged in that order and de-duplicated by title. A lower-priority source is skipped if the higher ones already produced enough.
 4. **Clean-up.** A domain blocklist, a language-fit rule (headlines in the wrong language for the country are dropped; this catches outlets GDELT files under the wrong place, such as a Taiwanese site tagged as Madagascar), and a noise filter (job ads and the like), then a cap per outlet so one site can't fill the list.
@@ -66,7 +65,6 @@ The full text is in the app's About screen.
 - Headlines: the [GDELT Project](https://www.gdeltproject.org). Titles only, linked to the publishers.
 - Sea conditions: [Open-Meteo.com](https://open-meteo.com) Marine API (data from DWD and other national weather services), used under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) for non-commercial purposes. Not for navigation.
 - Outlet feeds: Matangi Tonga and RNZ Pacific.
-- Headline search: Google News RSS, for personal non-commercial use only.
 
 ## Build
 

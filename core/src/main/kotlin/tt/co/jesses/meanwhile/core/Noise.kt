@@ -2,7 +2,7 @@ package tt.co.jesses.meanwhile.core
 
 /**
  * Titles to drop per outlet: items that aren't news, from outlets that are otherwise fine. Keyed by domain, not by
- * country or feed, because the same outlet reaches us through GDELT, RSS and Google News, and a rule has to catch
+ * country or feed, because the same outlet reaches us through GDELT and RSS, and a rule has to catch
  * all three. (Matangi Tonga's own feed has none of these; its job ads came in through GDELT.)
  *
  * This differs from the blocklist and the language rule, which remove outlets GDELT filed under the wrong country.

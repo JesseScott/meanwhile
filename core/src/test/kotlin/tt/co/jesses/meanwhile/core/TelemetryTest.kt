@@ -11,7 +11,6 @@ class TelemetryTest {
         TelemetryEvent.LoadFinished(water = true, showingOcean = false, kind = LoadKindName.NewPlace, articles = 44, durationMs = 45_051, sources = setOf("rss", "gnews", "gdelt")),
         TelemetryEvent.LoadFailed("Busy", LoadKindName.Refresh),
         TelemetryEvent.ModeSwitched(toOcean = true, via = ModeSwitchVia.Snackbar),
-        TelemetryEvent.ArticleOpened("gnews"),
         TelemetryEvent.AboutOpened,
         TelemetryEvent.KofiOpened,
         TelemetryEvent.LicensesOpened,
@@ -22,7 +21,7 @@ class TelemetryTest {
         // Every parameter must be a boolean, an int, or one of a short list of known words.
         val knownWords = setOf(
             "device", "search", "new_place", "switch_mode", "refresh", "switch", "snackbar",
-            "none", "gdelt", "rss", "gnews", "unknown",
+            "none", "gdelt", "rss", "unknown",
             "LocationUnavailable", "NoLandNearby", "NoHeadlines", "Busy", "Offline", "Unknown",
             "0", "1-4", "5-19", "20+", "under_2s", "2-10s", "10-45s", "over_45s",
         )

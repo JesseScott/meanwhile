@@ -82,7 +82,7 @@ sealed class TelemetryEvent(val name: String, val params: Map<String, Any> = emp
     data object LicensesOpened : TelemetryEvent("licenses_opened")
 }
 
-val KNOWN_SOURCES = setOf("gdelt", "rss", "gnews")
+val KNOWN_SOURCES = setOf("gdelt", "rss")
 
 /** The names of the screen's error types. Kept here as words so that nothing free-form can be sent in their place. */
 val KNOWN_ERRORS = setOf("LocationUnavailable", "NoLandNearby", "NoHeadlines", "Busy", "Offline", "Unknown")

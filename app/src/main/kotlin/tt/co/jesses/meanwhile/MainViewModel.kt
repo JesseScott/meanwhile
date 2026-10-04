@@ -20,7 +20,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 import tt.co.jesses.meanwhile.core.CachingNewsSource
 import tt.co.jesses.meanwhile.core.FallbackNewsSource
 import tt.co.jesses.meanwhile.core.GdeltNewsSource
-import tt.co.jesses.meanwhile.core.GoogleNewsSource
 import tt.co.jesses.meanwhile.core.LatLon
 import tt.co.jesses.meanwhile.core.LoadKindName
 import tt.co.jesses.meanwhile.core.MarineSource
@@ -85,9 +84,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // Every source gets a turn at the nearest place before the app gives up and moves farther away:
-    // GDELT (published there), curated outlet feeds, then Google News search (about there).
+    // GDELT (published there), then curated outlet feeds.
     private val news: NewsSource = CachingNewsSource(
-        delegate = FallbackNewsSource(listOf(GdeltNewsSource(http), RssNewsSource(http), GoogleNewsSource(http))),
+        delegate = FallbackNewsSource(listOf(GdeltNewsSource(http), RssNewsSource(http))),
         store = FileNewsCacheStore(File(app.cacheDir, "news")),
     )
     private val marine: MarineSource = OpenMeteoMarineSource(http)
