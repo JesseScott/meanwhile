@@ -29,7 +29,7 @@ sealed interface Progress {
 }
 
 /** Why a load failed outright, and nothing about which service failed. */
-enum class UiError { LocationUnavailable, NoLandNearby, NoHeadlines, Busy, Offline, Unknown }
+enum class UiError { LocationUnavailable, LocationOff, NoLandNearby, NoHeadlines, Busy, Offline, Unknown }
 
 /** Something worth saying that doesn't replace the screen. */
 sealed interface UiNotice {

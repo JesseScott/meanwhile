@@ -22,7 +22,7 @@ class TelemetryTest {
         val knownWords = setOf(
             "device", "search", "new_place", "switch_mode", "refresh", "switch", "snackbar",
             "none", "gdelt", "rss", "unknown",
-            "LocationUnavailable", "NoLandNearby", "NoHeadlines", "Busy", "Offline", "Unknown",
+            "LocationUnavailable", "LocationOff", "NoLandNearby", "NoHeadlines", "Busy", "Offline", "Unknown",
             "0", "1-4", "5-19", "20+", "under_2s", "2-10s", "10-45s", "over_45s",
         )
         for (event in everyEvent) {

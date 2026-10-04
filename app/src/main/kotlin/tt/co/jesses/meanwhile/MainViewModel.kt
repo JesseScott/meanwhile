@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import tt.co.jesses.meanwhile.core.CachingNewsSource
 import tt.co.jesses.meanwhile.core.FallbackNewsSource
 import tt.co.jesses.meanwhile.core.GdeltNewsSource
@@ -116,9 +115,31 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun useDeviceLocation() {
         loadJob?.cancel()
-        _state.update { it.copy(status = Status.Loading, error = null, notice = null, progress = Progress.Locating) }
+        // Asking for the phone's location means leaving the place on screen, so it goes straight away. Otherwise a
+        // failed lookup would leave the last place in the header under an error about something else.
+        _state.update {
+            it.copy(
+                status = Status.Loading,
+                error = null,
+                notice = null,
+                progress = Progress.Locating,
+                originLabel = null,
+                antipode = null,
+                country = null,
+                articles = emptyList(),
+                marine = null,
+                searchResults = emptyList(),
+                isRefreshing = false,
+                loadingMore = false,
+            )
+        }
         loadJob = viewModelScope.launch {
-            val here = withTimeoutOrNull(LOCATION_TIMEOUT_MS) { location.current() }
+            if (!location.isEnabled()) {
+                _state.update { it.copy(status = Status.Error, error = UiError.LocationOff) }
+                telemetry.log(TelemetryEvent.LoadFailed(UiError.LocationOff.name, LoadKindName.NewPlace))
+                return@launch
+            }
+            val here = location.current()
             if (here == null) {
                 _state.update { it.copy(status = Status.Error, error = UiError.LocationUnavailable) }
             } else {
@@ -326,6 +347,5 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         const val MAX_ARTICLES = 100
         const val MAX_COUNTRY_ATTEMPTS = 3
         const val ASK_DELAY_MS = 5_000L
-        const val LOCATION_TIMEOUT_MS = 20_000L
     }
 }

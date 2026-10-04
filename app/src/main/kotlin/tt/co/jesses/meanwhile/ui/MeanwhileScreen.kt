@@ -119,6 +119,7 @@ fun MeanwhileScreen(
     onEvent: (UiEvent) -> Unit,
     onOpenAbout: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenLocationSettings: () -> Unit,
 ) {
     // Headlines sit under Today / Yesterday / Earlier headings; a late arrival slots into its own day.
     val groups = remember(state.articles) { state.articles.groupedByRecency(Instant.now(), ZoneId.systemDefault()) }
@@ -177,10 +178,17 @@ fun MeanwhileScreen(
                     Status.Error -> item(key = "error") {
                         Column {
                             Text((state.error ?: UiError.Unknown).text(), color = MaterialTheme.colorScheme.error)
-                            TextButton(onClick = {
-                                // Without a location there is nothing to refresh, so ask for the location again.
-                                if (state.error == UiError.LocationUnavailable) onUseLocation() else onEvent(UiEvent.Refresh)
-                            }) { Text("Try again") }
+                            val noLocation = state.error == UiError.LocationUnavailable || state.error == UiError.LocationOff
+                            Row {
+                                TextButton(onClick = {
+                                    // Without a location there is nothing to refresh, so ask for the location again.
+                                    if (noLocation) onUseLocation() else onEvent(UiEvent.Refresh)
+                                }) { Text("Try again") }
+                                // Only the phone's own switch can fix this, so say where it is.
+                                if (state.error == UiError.LocationOff) {
+                                    TextButton(onClick = onOpenLocationSettings) { Text("Location settings") }
+                                }
+                            }
                         }
                     }
                     // A notice (such as "location is off") says it better than the generic hint, so don't show both.
@@ -277,9 +285,13 @@ private fun SearchBar(
             trailingIcon = {
                 Row {
                     if (query.isNotEmpty()) {
-                        IconButton(onClick = { query = "" }) { Icon(Icons.Filled.Close, contentDescription = "Clear") }
+                        IconButton(onClick = {
+                            query = ""
+                            onDismissPlaces()
+                        }) { Icon(Icons.Filled.Close, contentDescription = "Clear") }
                     }
                     IconButton(onClick = {
+                        query = ""
                         keyboard?.hide()
                         focus.clearFocus()
                         onUseLocation()
