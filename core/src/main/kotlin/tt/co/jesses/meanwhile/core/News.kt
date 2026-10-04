@@ -96,13 +96,16 @@ class GdeltNewsSource(
         val fips = place.fips
         val day = fetch(fips, "24h")
         if (day.size >= minArticles) return NewsResult(day, "24h")
-        // Widening is a bonus; if it fails (GDELT rate limits hard), keep what the day gave us.
+        // Widening is a bonus; if it fails (GDELT rate limits hard), keep what the day gave us. But a day with
+        // nothing in it plus a failed widening is not "a quiet place", it is "we couldn't tell": say so, or the
+        // caller concludes there is nothing here and moves on to another country.
         val week = try {
             fetch(fips, "7d")
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Trace.log { "7d widening failed for $fips: ${e.message}; keeping ${day.size} articles from 24h" }
+            Trace.log { "7d widening failed for $fips: ${e.message}; ${if (day.isEmpty()) "nothing from 24h either, so failing" else "keeping ${day.size} articles from 24h"}" }
+            if (day.isEmpty()) throw e
             return NewsResult(day, "24h")
         }
         return if (week.size > day.size) NewsResult(week, "7d") else NewsResult(day, "24h")
