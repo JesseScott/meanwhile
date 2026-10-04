@@ -18,7 +18,9 @@ WHAT'S ROUGH, SO YOU KNOW
 - Distances to the nearest land are approximate.
 
 PRIVACY
-Approximate location only, used to find the point opposite you and not stored. No accounts, no ads. This build doesn't send usage or crash reports. Full details: https://www.jesses.co.tt/privacy-meanwhile.html
+Approximate location only, used to find the point opposite you and not stored. No accounts, no ads.
+Usage and crash reports are off unless you turn them on. After you've used the app a few times it will ask once or twice with a small message at the bottom ("Help improve Meanwhile?"): tap Turn on, ignore it, or use the switch in About whenever you like. If you turn it on, it sends anonymous things like which screens you open, whether a load worked, and crash reports. It never includes your location, the place you looked up or what you read. It would help me a lot if you turn it on, but it's completely up to you.
+Full details: https://www.jesses.co.tt/privacy-meanwhile.html
 
 TELL ME WHAT YOU THINK
 Anything is useful: confusing, slow, ugly, broken, or nice. Reply to me directly [feedback route to be decided]. A screenshot helps a lot, as does your phone model and Android version.

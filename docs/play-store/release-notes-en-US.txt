@@ -1,9 +1,9 @@
-Meanwhile 0.1.0 (build 3)
+Meanwhile 0.1.0 (build 4)
 
 Thanks for testing! Meanwhile shows news, and the sea, from the exact opposite side of the world.
 
-New: headlines grouped by day, a single search bar, place suggestions that stay put, and more accurate "nearest land" distances.
+New: optional anonymous usage and crash reports (off unless you turn them on), a steadier header, and a clear "headlines are busy" message instead of jumping to another country.
 
-Please try: location and search, switching between open ocean and nearest land, pull to refresh, dark mode.
+Please try: location and search, switching ocean and nearest land, pull to refresh, dark mode.
 
-Known rough edges: small places can have few or no headlines, and titles stay in their original language.
+Known rough edges: small places can have few headlines; titles stay in their original language.
