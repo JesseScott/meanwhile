@@ -109,6 +109,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             is UiEvent.PickPlace -> usePlace(event.place)
             is UiEvent.SetMode -> setMode(event.mode, event.via)
             UiEvent.Refresh -> refresh()
+            UiEvent.DismissPlaces -> _state.update { it.copy(searchResults = emptyList()) }
         }
     }
 

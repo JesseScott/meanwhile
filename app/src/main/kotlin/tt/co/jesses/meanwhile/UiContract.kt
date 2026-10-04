@@ -78,6 +78,9 @@ sealed interface UiEvent {
     data class SetMode(val mode: ViewMode, val via: ModeSwitchVia = ModeSwitchVia.Switch) : UiEvent
     /** Pull to refresh, or "try again" after an error. */
     data object Refresh : UiEvent
+
+    /** The user dismissed the list of matching places without choosing one. */
+    data object DismissPlaces : UiEvent
 }
 
 /** Things that happen once, not things that are true: a screen shows each and forgets it. */

@@ -4,6 +4,13 @@ import android.net.Uri
 import android.text.format.DateUtils
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.clickable
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.window.PopupProperties
+import androidx.compose.foundation.layout.width
+import tt.co.jesses.meanwhile.NamedPlace
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.text.KeyboardActions
@@ -113,8 +120,6 @@ fun MeanwhileScreen(
 ) {
     // Headlines sit under Today / Yesterday / Earlier headings; a late arrival slots into its own day.
     val groups = remember(state.articles) { state.articles.groupedByRecency(Instant.now(), ZoneId.systemDefault()) }
-    val keyboard = LocalSoftwareKeyboardController.current
-    val focus = LocalFocusManager.current
     BoxWithConstraints(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize()) {
         // The part that stays put. It only ever holds things whose size doesn't depend on what is loading:
@@ -131,7 +136,13 @@ fun MeanwhileScreen(
         ) {
             Header(state, onOpenAbout)
             if (state.antipodeIsWater) ModeSwitch(state.mode) { onEvent(UiEvent.SetMode(it)) }
-            SearchBar(onSearch = { onEvent(UiEvent.Search(it)) }, onUseLocation = onUseLocation)
+            SearchBar(
+                places = state.searchResults,
+                onSearch = { onEvent(UiEvent.Search(it)) },
+                onPick = { onEvent(UiEvent.PickPlace(it)) },
+                onDismissPlaces = { onEvent(UiEvent.DismissPlaces) },
+                onUseLocation = onUseLocation,
+            )
         }
         // A fixed-height strip: the rule under the header, with a thin progress bar over it while anything loads.
         Box(Modifier.fillMaxWidth().height(4.dp)) {
@@ -151,20 +162,6 @@ fun MeanwhileScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                state.searchResults.forEach { place ->
-                    item(key = "place-${place.label}") {
-                        TextButton(
-                            onClick = {
-                                keyboard?.hide()
-                                focus.clearFocus(force = true)
-                                onEvent(UiEvent.PickPlace(place))
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(place.label, modifier = Modifier.fillMaxWidth())
-                        }
-                    }
-                }
                 state.notice?.let { notice ->
                     item(key = "notice") { NoticeItem(notice, onOpenSettings) }
                 }
@@ -248,40 +245,74 @@ private fun ModeSwitch(mode: ViewMode, onSetMode: (ViewMode) -> Unit) {
     }
 }
 
-/** One row to say where to look: type a place and press search, or tap the target to use the phone's location. */
+/**
+ * One row to say where to look: type a place and press search, or tap the target to use the phone's location.
+ * Matching places drop down under the bar as an overlay, so they stay in view whatever the list below does and
+ * don't push anything around.
+ */
 @Composable
-private fun SearchBar(onSearch: (String) -> Unit, onUseLocation: () -> Unit) {
+private fun SearchBar(
+    places: List<NamedPlace>,
+    onSearch: (String) -> Unit,
+    onPick: (NamedPlace) -> Unit,
+    onDismissPlaces: () -> Unit,
+    onUseLocation: () -> Unit,
+) {
     var query by rememberSaveable { mutableStateOf("") }
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = LocalFocusManager.current
-    OutlinedTextField(
-        value = query,
-        onValueChange = { query = it },
-        modifier = Modifier.fillMaxWidth(),
-        placeholder = { Text("Search for a place") },
-        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-        trailingIcon = {
-            Row {
-                if (query.isNotEmpty()) {
-                    IconButton(onClick = { query = "" }) { Icon(Icons.Filled.Close, contentDescription = "Clear") }
+    val density = LocalDensity.current
+    var barWidth by remember { mutableStateOf(0.dp) }
+    Box {
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { barWidth = with(density) { it.size.width.toDp() } },
+            placeholder = { Text("Search for a place") },
+            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+            trailingIcon = {
+                Row {
+                    if (query.isNotEmpty()) {
+                        IconButton(onClick = { query = "" }) { Icon(Icons.Filled.Close, contentDescription = "Clear") }
+                    }
+                    IconButton(onClick = {
+                        keyboard?.hide()
+                        focus.clearFocus()
+                        onUseLocation()
+                    }) { Icon(MyLocationIcon, contentDescription = "Use my location") }
                 }
-                IconButton(onClick = {
+            },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = {
+                if (query.isNotBlank()) {
+                    onSearch(query)
                     keyboard?.hide()
                     focus.clearFocus()
-                    onUseLocation()
-                }) { Icon(MyLocationIcon, contentDescription = "Use my location") }
+                }
+            }),
+        )
+        // Not focusable, so showing the matches doesn't steal focus or close the keyboard from under the user.
+        DropdownMenu(
+            expanded = places.isNotEmpty(),
+            onDismissRequest = onDismissPlaces,
+            modifier = Modifier.width(barWidth),
+            properties = PopupProperties(focusable = false),
+        ) {
+            places.forEach { place ->
+                DropdownMenuItem(
+                    text = { Text(place.label, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+                    onClick = {
+                        keyboard?.hide()
+                        focus.clearFocus(force = true)
+                        onPick(place)
+                    },
+                )
             }
-        },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        keyboardActions = KeyboardActions(onSearch = {
-            if (query.isNotBlank()) {
-                onSearch(query)
-                keyboard?.hide()
-                focus.clearFocus()
-            }
-        }),
-    )
+        }
+    }
 }
 
 /** Material's "my location" target, drawn here because the core icon set doesn't include it. */
