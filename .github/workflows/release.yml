@@ -1,0 +1,49 @@
+name: Release
+
+# When a merge to main changes version.properties, tag that commit and create a GitHub release for it.
+# The tag is v<versionName>-<versionCode>, the same as the AAB's file name (v0.1.0-2).
+# The signed AAB is built on the maintainer's machine, where the upload key lives, and attached afterwards
+# with scripts/release.sh.
+on:
+  push:
+    branches: [main]
+    paths: [version.properties]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create the tag and the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          read_prop() { grep -E "^$1=" version.properties | head -n1 | cut -d= -f2- | tr -d '[:space:]'; }
+          name=$(read_prop versionName)
+          code=$(read_prop versionCode)
+          tag="v${name}-${code}"
+          echo "version $name ($code) -> $tag"
+
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "$tag already exists; nothing to do."
+            exit 0
+          fi
+
+          # Released versions below 1.0 are pre-releases.
+          flags=()
+          case "$name" in 0.*) flags+=(--prerelease) ;; esac
+
+          # The Play release notes (if there are any) go first, then GitHub's list of what was merged since the last tag.
+          notes=docs/play-store/release-notes-en-US.txt
+          [ -f "$notes" ] && flags+=(--notes-file "$notes")
+
+          gh release create "$tag" \
+            --target "$GITHUB_SHA" \
+            --title "Meanwhile $name ($code)" \
+            --generate-notes \
+            "${flags[@]}"
