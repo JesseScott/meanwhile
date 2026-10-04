@@ -116,7 +116,24 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun useDeviceLocation() {
         loadJob?.cancel()
-        _state.update { it.copy(status = Status.Loading, error = null, notice = null, progress = Progress.Locating) }
+        // Asking for the phone's location means leaving the place on screen, so it goes straight away. Otherwise a
+        // failed lookup would leave the last place in the header under an error about something else.
+        _state.update {
+            it.copy(
+                status = Status.Loading,
+                error = null,
+                notice = null,
+                progress = Progress.Locating,
+                originLabel = null,
+                antipode = null,
+                country = null,
+                articles = emptyList(),
+                marine = null,
+                searchResults = emptyList(),
+                isRefreshing = false,
+                loadingMore = false,
+            )
+        }
         loadJob = viewModelScope.launch {
             val here = withTimeoutOrNull(LOCATION_TIMEOUT_MS) { location.current() }
             if (here == null) {

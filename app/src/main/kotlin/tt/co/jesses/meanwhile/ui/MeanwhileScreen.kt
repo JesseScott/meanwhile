@@ -277,9 +277,13 @@ private fun SearchBar(
             trailingIcon = {
                 Row {
                     if (query.isNotEmpty()) {
-                        IconButton(onClick = { query = "" }) { Icon(Icons.Filled.Close, contentDescription = "Clear") }
+                        IconButton(onClick = {
+                            query = ""
+                            onDismissPlaces()
+                        }) { Icon(Icons.Filled.Close, contentDescription = "Clear") }
                     }
                     IconButton(onClick = {
+                        query = ""
                         keyboard?.hide()
                         focus.clearFocus()
                         onUseLocation()
