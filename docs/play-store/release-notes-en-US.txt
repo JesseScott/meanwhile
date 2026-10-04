@@ -1,0 +1,9 @@
+Meanwhile 0.1.0 (Alpha 2)
+
+Thanks for testing! Meanwhile shows news, and the sea, from the exact opposite side of the world.
+
+New: headlines grouped by day, a single search bar, place suggestions that stay put, and more accurate "nearest land" distances.
+
+Please try: location and search, switching between open ocean and nearest land, pull to refresh, dark mode.
+
+Known rough edges: small places can have few or no headlines, and titles stay in their original language.

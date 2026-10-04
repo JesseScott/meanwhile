@@ -1,0 +1,27 @@
+Hi! Meanwhile is a small hobby app I'm making. It finds the point exactly opposite you on Earth and shows what is happening there: headlines from that country, or, if it's open ocean (it usually is), the sea itself, with waves, swell, water temperature and the time of day. One tap switches to headlines from the nearest land.
+
+HOW TO INSTALL
+Open the link I sent on your Android phone while signed in to the Google account I added, then tap "Download it on Google Play".
+
+WHAT I'D LIKE YOU TO TRY
+- Open the app and allow approximate location, or just search for a place (try your hometown, or somewhere far away).
+- When it lands in the ocean, tap "Nearest land" and back to "Open ocean". Does the screen stay put?
+- Pull down on the headlines to refresh.
+- Tap a headline to open it. Try dark mode, a big font size, and turning your data off.
+- Look at the About screen (the gear): is the privacy text clear?
+
+WHAT'S ROUGH, SO YOU KNOW
+- Small countries can have only a few headlines, or none. That's the data, not you.
+- Headlines are shown in their original language.
+- The first load can take up to a minute while the sources answer. Headlines appear as soon as the first one does.
+- Now and then an outlet shows up under the wrong country. If you see one, tell me which.
+- Distances to the nearest land are approximate.
+
+PRIVACY
+Approximate location only, used to find the point opposite you and not stored. No accounts, no ads. This build doesn't send usage or crash reports. Full details: https://www.jesses.co.tt/privacy-meanwhile.html
+
+TELL ME WHAT YOU THINK
+Anything is useful: confusing, slow, ugly, broken, or nice. Reply to me directly [feedback route to be decided]. A screenshot helps a lot, as does your phone model and Android version.
+
+Thank you!
+Jesse
