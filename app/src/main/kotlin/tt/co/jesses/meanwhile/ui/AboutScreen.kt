@@ -41,6 +41,7 @@ import tt.co.jesses.meanwhile.core.TelemetryEvent
 
 private const val KOFI_URL = "https://ko-fi.com/jessescott"
 private const val SITE_URL = "https://jesses.co.tt"
+private const val PRIVACY_URL = "https://www.jesses.co.tt/privacy-meanwhile.html"
 
 @Composable
 fun AboutScreen(onBack: () -> Unit) {
@@ -82,8 +83,8 @@ fun AboutScreen(onBack: () -> Unit) {
 
             Section("Where the data comes from") {
                 Body(
-                    "Headlines: the GDELT Project (gdeltproject.org), a free, open database of world news. " +
-                        "Meanwhile shows article titles only and links to the publishers' own sites. " +
+                    "Headlines: the GDELT Project (gdeltproject.org), a free, open database of world news, plus a few public " +
+                        "news feeds from local outlets. Meanwhile shows article titles only and links to the publishers' own sites. " +
                         "Titles appear as published, in their original language, and GDELT can occasionally file an outlet under the wrong country.",
                 )
                 LinkButton("GDELT Project", "https://www.gdeltproject.org")
@@ -100,35 +101,27 @@ fun AboutScreen(onBack: () -> Unit) {
 
             Section("Privacy") {
                 Bullet(
-                    "Your location. Meanwhile asks for approximate (coarse) location only, and only to work out the point " +
-                        "opposite you. It doesn't store your location, and there is no account to sign up for.",
+                    "Your location. Meanwhile asks for approximate location only, to work out the point opposite you. " +
+                        "It isn't stored, and there are no accounts.",
                 )
                 Bullet(
-                    "What leaves your phone. The coordinates of the point opposite you are sent to your device's geocoder " +
-                        "(usually Google Play services) to find the country. Only the country code goes to GDELT for headlines. " +
-                        "In open-ocean mode, the opposite point's coordinates go to Open-Meteo for sea conditions.",
+                    "What leaves your phone. The point opposite you goes to your device's geocoder (usually Google) to find the " +
+                        "country and, in open-ocean mode, to Open-Meteo for sea conditions. Only a country code goes to the news " +
+                        "sources. That point is your location mirrored, so treat it as approximate-location data. You can search " +
+                        "for a place instead; searches go to the geocoder too.",
                 )
-                Bullet(
-                    "That opposite point is just your location mirrored, so treat those coordinates as approximate-location data. " +
-                        "You can search for a place instead of using your location.",
-                )
-                Bullet("Places you search for are sent to your device's geocoder to look up their coordinates.")
                 Bullet(
                     "Usage and crash reports are off unless you turn them on below. If you do, Meanwhile uses Firebase, a Google " +
-                        "service, to see how the app is used and to find crashes: which screens are opened, whether a load worked and " +
-                        "how long it took, kinds of errors, your phone's model and Android version, the app version, and a random " +
-                        "installation ID (a number that isn't tied to you and changes if you reinstall). There are no accounts, so " +
-                        "no account details, and the app is built not to put your location, your antipode or your searches in these " +
-                        "reports. Turning the switch off again stops the reports and clears the ID.",
+                        "service, to see how the app is used and to find crashes: screens opened, whether a load worked and how long it " +
+                        "took, kinds of errors, your phone's model, Android and app version, and a random installation ID. They never " +
+                        "include your location, your antipode or your searches. Turning the switch off stops them and resets the ID.",
                 )
                 Bullet(
-                    "Headlines are kept on your phone for up to three days per country, so something shows straight away while fresh headlines load. " +
-                        "Clearing the app's cache removes them. The app also remembers that you have seen its welcome screen, your " +
-                        "choice about the reports below, and a count of how often it has worked and asked, so that it doesn't ask too often.",
+                    "Stored on your phone: headlines for up to three days (so something shows quickly), whether you have seen " +
+                        "the welcome screen, your choice about reports, and a count of how often the app has asked.",
                 )
                 Bullet(
-                    "No ads. Tapping a headline opens the publisher's own website in your browser, " +
-                        "which has its own privacy policy.",
+                    "No ads. Tapping a headline opens the publisher's own website in your browser, which has its own privacy policy.",
                 )
 
                 // The saved choice is the only source of truth; the application turns collection on and off from it.
@@ -150,7 +143,10 @@ fun AboutScreen(onBack: () -> Unit) {
                         },
                     )
                 }
-                LinkButton("How Firebase handles data", "https://firebase.google.com/support/privacy")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LinkButton("Privacy policy", PRIVACY_URL)
+                    LinkButton("How Firebase handles data", "https://firebase.google.com/support/privacy")
+                }
 
                 // Only in debug builds: lets you check that crash reports arrive in the Firebase console.
                 if (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {
