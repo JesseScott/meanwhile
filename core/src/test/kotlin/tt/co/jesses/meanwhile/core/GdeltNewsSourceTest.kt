@@ -96,4 +96,52 @@ class GdeltNewsSourceTest {
         assertEquals(20, result.articles.size)
         assertEquals(listOf("sourcecountry:NZ 24h"), calls)
     }
+
+    private fun scripted(vararg responses: Pair<String, HttpStatusCode>, bodiesByTimespan: Map<String, String>): GdeltNewsSource {
+        val status = responses.toMap()
+        val engine = MockEngine { request ->
+            val timespan = request.url.parameters["timespan"].orEmpty()
+            val code = status[timespan] ?: HttpStatusCode.OK
+            respond(
+                content = if (code == HttpStatusCode.OK) bodiesByTimespan.getValue(timespan) else "Please limit requests",
+                status = code,
+                headers = headersOf(HttpHeaders.ContentType, "application/json"),
+            )
+        }
+        return GdeltNewsSource(HttpClient(engine), minIntervalMs = 0, retryDelayMs = 0)
+    }
+
+    @Test
+    fun anEmptyDayWhenWideningIsRateLimitedIsAFailureNotAQuietPlace() = runTest {
+        // Madagascar's day is nearly all a misfiled Taiwanese site, so it comes out empty; the week is rate limited.
+        // Saying "no headlines" here sent the app off to South Africa.
+        val source = scripted(
+            "7d" to HttpStatusCode.TooManyRequests,
+            bodiesByTimespan = mapOf("24h" to json(chinese(20, "d"))),
+        )
+
+        kotlin.test.assertFailsWith<RateLimitedException> { source.headlines(madagascar) }
+    }
+
+    @Test
+    fun aThinDayIsKeptWhenWideningFails() = runTest {
+        val source = scripted(
+            "7d" to HttpStatusCode.TooManyRequests,
+            bodiesByTimespan = mapOf("24h" to json(chinese(10, "d") + french(3, "d"))),
+        )
+
+        val result = source.headlines(madagascar)
+
+        assertEquals("24h", result.window)
+        assertEquals(3, result.articles.size)
+    }
+
+    @Test
+    fun aDayAndAWeekThatBothAnswerWithNothingIsAQuietPlace() = runTest {
+        val source = scripted(bodiesByTimespan = mapOf("24h" to json(emptyList()), "7d" to json(emptyList())))
+
+        val result = source.headlines(madagascar)
+
+        assertEquals(emptyList(), result.articles)
+    }
 }
