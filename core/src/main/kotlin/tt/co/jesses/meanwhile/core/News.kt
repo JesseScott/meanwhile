@@ -195,9 +195,12 @@ class CachingNewsSource(
     private val maxAgeMs: Long = 3 * 24 * 60 * 60 * 1000,
     private val clock: () -> Long = System::currentTimeMillis,
 ) : StreamingNewsSource {
-    /** The stored entry for [key], unless it is too old to show. */
+    /**
+     * The stored entry for [key], unless it is too old to show or has nothing in it. An empty entry is never worth
+     * keeping: it would be replayed as "no headlines" when a refresh fails, and a failed fetch isn't a quiet place.
+     */
     private suspend fun usable(key: String): CacheEntry? =
-        store.get(key)?.takeIf { clock() - it.savedAt < maxAgeMs }
+        store.get(key)?.takeIf { clock() - it.savedAt < maxAgeMs && it.articles.isNotEmpty() }
 
     override fun headlinesFlow(place: NewsPlace): Flow<NewsProgress> = flow {
         val key = place.fips
@@ -212,7 +215,7 @@ class CachingNewsSource(
         if (cached != null) emit(NewsProgress(cached.toResult(), 1))
         emitAll(
             delegate.stream(place)
-                .onEach { if (it.done) store.put(key, CacheEntry(clock(), it.result.window, it.result.articles)) }
+                .onEach { if (it.done && it.result.articles.isNotEmpty()) store.put(key, CacheEntry(clock(), it.result.window, it.result.articles)) }
                 .catch { e ->
                     Trace.log { "fetch failed for $key: ${e::class.simpleName}: ${e.message}; ${if (cached != null) "keeping cached entry" else "no cache to fall back on"}" }
                     if (cached != null) emit(NewsProgress(cached.toResult(), 0)) else throw e
@@ -229,7 +232,7 @@ class CachingNewsSource(
         }
         Trace.log { "cache ${if (cached == null) "MISS" else "REVALIDATE"} $key" }
         return try {
-            delegate.headlines(place).also { store.put(key, CacheEntry(clock(), it.window, it.articles)) }
+            delegate.headlines(place).also { if (it.articles.isNotEmpty()) store.put(key, CacheEntry(clock(), it.window, it.articles)) }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

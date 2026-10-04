@@ -134,6 +134,27 @@ class CachingStreamTest {
     }
 
     @Test
+    fun anEmptyResultIsNeverCached() = runTest {
+        val store = InMemoryNewsCacheStore()
+        val source = Playback(listOf(NewsProgress(NewsResult(emptyList(), "24h"), 0)))
+
+        CachingNewsSource(source, store, clock = { 7 }).headlinesFlow(place).toList()
+
+        assertNull(store.get("TN"))
+    }
+
+    @Test
+    fun anEmptyEntryAlreadyStoredIsIgnoredSoAFailedFetchStillFails() = runTest {
+        val source = Playback(emptyList(), error = NewsUnavailableException("Tonga", listOf(RateLimitedException("GDELT"))))
+        val emptyStore = InMemoryNewsCacheStore().also { it.put("TN", CacheEntry(4_000, "24h", emptyList())) }
+        val cache = CachingNewsSource(source, emptyStore, clock = { 5_000 })
+
+        val error = assertFailsWith<NewsUnavailableException> { cache.headlinesFlow(place).toList() }
+
+        assertEquals(NewsFailure.RateLimited, error.reason)
+    }
+
+    @Test
     fun aPlainSourceStreamsAsOneFinishedSnapshot() = runTest {
         val plain = object : NewsSource {
             override suspend fun headlines(place: NewsPlace) = result("only")
