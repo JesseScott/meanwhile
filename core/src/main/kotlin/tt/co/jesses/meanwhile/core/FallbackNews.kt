@@ -31,9 +31,9 @@ private sealed interface Outcome {
  * before a slower, lower-priority one is even asked. If the sources above one already gave [minArticles] by its
  * turn, it is skipped. A source slower than [sourceTimeoutMs] counts as failed.
  *
- * A source that fails is skipped. Only if every source fails does this throw, and then as a
- * [NewsUnavailableException] whose message says nothing about which source or why. A source that answers with
- * nothing counts as an answer: the place is simply quiet.
+ * A source that fails is skipped. This throws only when there is nothing to show and a source failed (so we can't tell
+ * a quiet place from an outage), as a [NewsUnavailableException] whose message says nothing about which source or why.
+ * When no source failed, empty is a real answer: the place is simply quiet.
  */
 class FallbackNewsSource(
     private val sources: List<NewsSource>,
@@ -91,7 +91,7 @@ class FallbackNewsSource(
                     val outcome = try {
                         val result = withTimeoutOrNull(sourceTimeoutMs) { source.headlines(place) }
                         if (result == null) {
-                            Outcome.Failed(SourceFailedException(name.orEmpty(), "timed out after $sourceTimeoutMs ms"))
+                            Outcome.Failed(SourceTimedOutException(name.orEmpty(), sourceTimeoutMs))
                         } else {
                             // Cleaned before counting, so non-news can't make a thin place look like it has enough.
                             Trace.log { "$name gave ${result.articles.size} for ${place.name}" }
@@ -108,6 +108,9 @@ class FallbackNewsSource(
             }
         }
 
-        if (outcomes.none { it is Outcome.Answered }) throw NewsUnavailableException(place.name, failures)
+        // Nothing found. If every source answered, the place is just quiet. If any failed (rate limited, timed out),
+        // we can't tell, and saying "no headlines" would send the caller off to another country for no reason.
+        val nothing = outcomes.none { it is Outcome.Answered } || merged().articles.isEmpty()
+        if (nothing && failures.isNotEmpty()) throw NewsUnavailableException(place.name, failures)
     }
 }

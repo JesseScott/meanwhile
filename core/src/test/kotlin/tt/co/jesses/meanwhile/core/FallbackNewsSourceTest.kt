@@ -94,12 +94,37 @@ class FallbackNewsSourceTest {
     }
 
     @Test
-    fun aSourceThatAnswersWithNothingCountsAsAnAnswer() = runTest {
-        val sources = listOf(answer("a", 0, "gdelt"), Fake(error = IOException("offline")))
+    fun whenEverySourceAnswersWithNothingThePlaceIsQuietNotAnOutage() = runTest {
+        val sources = listOf(answer("a", 0, "gdelt"), answer("b", 0, "rss"))
 
         val result = FallbackNewsSource(sources, minArticles = 5).headlines(place)
 
-        assertEquals(emptyList(), result.articles) // the place is quiet; this is not an outage
+        assertEquals(emptyList(), result.articles)
+    }
+
+    @Test
+    fun nothingFoundWhileASourceFailedIsAnOutageBecauseTheFailedOneMightHaveHadHeadlines() = runTest {
+        // GDELT was rate limited and the other source simply has no feed for this place. Reporting "no headlines"
+        // would send the app off to try another country, which hits the same limit.
+        val sources = listOf(Fake(error = RateLimitedException("GDELT")), answer("b", 0, "rss"))
+
+        val error = assertFailsWith<NewsUnavailableException> { FallbackNewsSource(sources).headlines(place) }
+
+        assertEquals(NewsFailure.RateLimited, error.reason)
+    }
+
+    @Test
+    fun aFailedSourceDoesNotMatterWhenAnotherFoundHeadlines() = runTest {
+        val sources = listOf(Fake(error = IOException("offline")), answer("b", 3, "rss"))
+
+        val result = FallbackNewsSource(sources, minArticles = 5).headlines(place)
+
+        assertEquals(3, result.articles.size)
+    }
+
+    @Test
+    fun aSourceThatTimesOutCountsAsBusy() {
+        assertEquals(NewsFailure.RateLimited, NewsUnavailableException("Tonga", listOf(SourceTimedOutException("GdeltNewsSource", 45_000))).reason)
     }
 
     @Test
