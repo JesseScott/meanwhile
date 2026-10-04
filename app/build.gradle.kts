@@ -25,10 +25,11 @@ val keystoreProperties = Properties().apply {
     if (file.exists()) file.inputStream().use { load(it) }
 }
 
-// One place for the version, so the AAB's file name always matches what is inside it
-// (app/build/outputs/bundle/release/meanwhile-0.1.0-1-release.aab). Bump versionCode for every Play upload.
-val appVersionName = "0.1.0"
-val appVersionCode = 2
+// The version comes from version.properties, so the AAB's file name always matches what is inside it
+// (app/build/outputs/bundle/release/meanwhile-0.1.0-1-release.aab). Bump versionCode (in version.properties) for every Play upload.
+val versionProperties = Properties().apply { rootProject.file("version.properties").inputStream().use { load(it) } }
+val appVersionName: String = versionProperties.getProperty("versionName")
+val appVersionCode: Int = versionProperties.getProperty("versionCode").toInt()
 base.archivesName.set("meanwhile-$appVersionName-$appVersionCode")
 
 android {
