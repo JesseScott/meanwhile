@@ -19,4 +19,10 @@ class BlocklistTest {
     fun defaultBlocklistCoversStormMg() {
         assertEquals(emptyList(), listOf(article("storm.mg")).withoutBlocked("MA"))
     }
+
+    @Test
+    fun defaultBlocklistCoversTaipeiTimesForMadagascarOnly() {
+        assertEquals(emptyList(), listOf(article("taipeitimes.com")).withoutBlocked("MA"))
+        assertEquals(listOf("taipeitimes.com"), listOf(article("taipeitimes.com")).withoutBlocked("TW").map { it.domain })
+    }
 }

@@ -3,10 +3,10 @@ package tt.co.jesses.meanwhile.core
 /**
  * Outlets GDELT files under the wrong country, keyed by FIPS code. GDELT appears to infer an
  * outlet's country partly from its domain suffix, so vanity TLDs misfile: storm.mg is a Taiwanese
- * site that lands under Madagascar (.mg). Add entries as they turn up in a feed.
+ * site that lands under Madagascar (.mg), and taipeitimes.com turned up there too without that excuse. Add entries as they turn up in a feed.
  */
 val DEFAULT_BLOCKED_DOMAINS: Map<String, Set<String>> = mapOf(
-    "MA" to setOf("storm.mg"),
+    "MA" to setOf("storm.mg", "taipeitimes.com"),
 )
 
 /** Drops articles from outlets that are blocked for [fips], matching the domain or any subdomain of it. */
