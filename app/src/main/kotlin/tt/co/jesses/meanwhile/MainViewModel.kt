@@ -35,6 +35,7 @@ import tt.co.jesses.meanwhile.core.Telemetry
 import tt.co.jesses.meanwhile.core.TelemetryEvent
 import tt.co.jesses.meanwhile.core.Trace
 import tt.co.jesses.meanwhile.core.antipode
+import tt.co.jesses.meanwhile.core.roughKm
 import tt.co.jesses.meanwhile.core.stream
 import java.io.File
 import java.io.IOException
@@ -234,7 +235,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         ),
                     )
                     noteGoodLoad()
-                    if (kind == LoadKind.NewPlace) _effects.send(UiEffect.OfferNearestLand(country.name, country.distanceKm.roundToInt()))
+                    if (kind == LoadKind.NewPlace) _effects.send(UiEffect.OfferNearestLand(country.name, roughKm(country.distanceKm)))
                     return
                 }
 

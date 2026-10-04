@@ -84,7 +84,7 @@ fun MeanwhileApp(viewModel: MainViewModel) {
             when (effect) {
                 is UiEffect.OfferNearestLand -> {
                     val answer = snackbar.showSnackbar(
-                        message = "Your antipode is open water. Read headlines from ${effect.country}, ${effect.distanceKm} km away?",
+                        message = "Your antipode is open water. Read headlines from ${effect.country}, about ${"%,d".format(effect.distanceKm)} km away?",
                         actionLabel = "Show headlines",
                         withDismissAction = true,
                         duration = SnackbarDuration.Long,

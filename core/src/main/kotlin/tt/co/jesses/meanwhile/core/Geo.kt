@@ -63,3 +63,40 @@ fun expandingSearchRings(
 
 private fun rad(deg: Double) = deg * PI / 180.0
 private fun deg(rad: Double) = rad * 180.0 / PI
+
+/** A point to check on the way out from a centre, [distanceKm] away from it. */
+class Probe(val distanceKm: Double, val point: LatLon)
+
+/**
+ * [steps] evenly spaced probes along [bearingDeg] between [innerKm] and [outerKm], neither end included. The search
+ * rings only say that land is somewhere between two radii (each double the one before, so 1,600 to 3,200 km is a
+ * factor of two); these narrow it down along the bearing where land was found.
+ */
+fun probesAlong(center: LatLon, bearingDeg: Double, innerKm: Double, outerKm: Double, steps: Int = 7): List<Probe> =
+    List(steps) { i ->
+        val d = innerKm + (outerKm - innerKm) * (i + 1) / (steps + 1)
+        Probe(d, center.destination(bearingDeg, d))
+    }
+
+/**
+ * Where the coast probably is along a bearing, given which probes (in order of distance) found land: halfway between
+ * the last probe that did not and the first that did. With no land in between it is halfway between the last probe
+ * and [outerKm], where the ring found some.
+ */
+fun estimateCoastKm(innerKm: Double, outerKm: Double, probeKm: List<Double>, isLand: List<Boolean>): Double {
+    require(probeKm.size == isLand.size) { "one answer per probe" }
+    val first = isLand.indexOfFirst { it }
+    return when {
+        first == 0 -> (innerKm + probeKm[0]) / 2
+        first > 0 -> (probeKm[first - 1] + probeKm[first]) / 2
+        probeKm.isEmpty() -> outerKm
+        else -> (probeKm.last() + outerKm) / 2
+    }
+}
+
+/** A distance worth showing: to the nearest 50 km under 1,000 km, to the nearest 100 km above. Zero stays zero. */
+fun roughKm(km: Double): Int = when {
+    km <= 0 -> 0
+    km < 1000 -> (kotlin.math.round(km / 50) * 50).toInt().coerceAtLeast(50)
+    else -> (kotlin.math.round(km / 100) * 100).toInt()
+}

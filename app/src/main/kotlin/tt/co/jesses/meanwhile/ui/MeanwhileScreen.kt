@@ -94,6 +94,7 @@ import tt.co.jesses.meanwhile.core.compassPoint
 import tt.co.jesses.meanwhile.core.dayPhaseOf
 import tt.co.jesses.meanwhile.core.flagEmoji
 import tt.co.jesses.meanwhile.core.oceanNameAt
+import tt.co.jesses.meanwhile.core.roughKm
 import tt.co.jesses.meanwhile.core.seaState
 import tt.co.jesses.meanwhile.core.seenInstant
 import tt.co.jesses.meanwhile.core.sunAltitudeDeg
@@ -382,7 +383,7 @@ private fun Header(state: UiState, onOpenAbout: () -> Unit) {
 }
 
 private fun openWaterNote(country: ResolvedCountry): String =
-    "Open water. Nearest land: ${country.name}, ${country.distanceKm.roundToInt()} km away."
+    "Open water. Nearest land: ${country.name}, about ${"%,d".format(roughKm(country.distanceKm))} km away."
 
 private fun localTimeThere(antipode: LatLon): String {
     val offset = ZoneOffset.ofHours(approxUtcOffsetHours(antipode.lon))

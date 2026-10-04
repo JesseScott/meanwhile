@@ -14,7 +14,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 import tt.co.jesses.meanwhile.core.DEFAULT_SEARCH_RADII_KM
 import tt.co.jesses.meanwhile.core.LatLon
 import tt.co.jesses.meanwhile.core.NO_COVERAGE_ISO
+import tt.co.jesses.meanwhile.core.estimateCoastKm
 import tt.co.jesses.meanwhile.core.expandingSearchRings
+import tt.co.jesses.meanwhile.core.probesAlong
 import tt.co.jesses.meanwhile.core.fipsFor
 import tt.co.jesses.meanwhile.core.haversineKm
 import java.io.IOException
@@ -135,6 +137,11 @@ data class ResolvedCountry(
 
 /** Finds the country at a point, or the nearest one when the point is open ocean. */
 class AntipodeResolver(private val geocoding: Geocoding) {
+    private companion object {
+        const val MAX_CANDIDATES = 6
+    }
+
+
     /**
      * The nearest country to [antipode] that is worth fetching news for. Territories in
      * [NO_COVERAGE_ISO] and anything in [exclude] (countries already tried and found empty)
@@ -146,21 +153,52 @@ class AntipodeResolver(private val geocoding: Geocoding) {
         geocoding.countryAt(antipode)?.takeIf { it !in skip }?.let { iso -> toResolved(iso, 0.0)?.let { return it } }
         AppLog.d(TAG, "antipode is not on usable land, searching outward for the nearest country")
 
-        for (ring in expandingSearchRings(antipode)) {
+        val rings = expandingSearchRings(antipode)
+        for ((ringIndex, ring) in rings.withIndex()) {
             AppLog.d(TAG, "ring ${ring.radiusKm.roundToInt()} km: geocoding ${ring.points.size} points")
             val hits = coroutineScope {
                 ring.points
-                    .map { p -> async { geocoding.countryAt(p)?.let { iso -> iso to haversineKm(antipode, p) } } }
+                    .mapIndexed { i, p -> async { geocoding.countryAt(p)?.let { iso -> Hit(iso, haversineKm(antipode, p), i) } } }
                     .awaitAll()
                     .filterNotNull()
-                    .filter { it.first !in skip }
+                    .filter { it.iso !in skip }
             }
-            val nearest = hits.minByOrNull { it.second } ?: continue
-            AppLog.d(TAG, "ring ${ring.radiusKm.roundToInt()} km: found ${nearest.first} at ${nearest.second.roundToInt()} km")
-            toResolved(nearest.first, nearest.second)?.let { return it }
+            if (hits.isEmpty()) continue
+            AppLog.d(TAG, "ring ${ring.radiusKm.roundToInt()} km: land at ${hits.size} of ${ring.points.size} points (${hits.map { it.iso }.distinct()})")
+            // Every hit in a ring is exactly the ring's radius away, so which country "won" would be down to the order
+            // the bearings happen to be checked in. Narrow down each direction that found land and take the nearest.
+            val inner = if (ringIndex == 0) 0.0 else rings[ringIndex - 1].radiusKm
+            val candidates = candidateHits(hits)
+            var best: Triple<String, Double, Hit>? = null
+            for (hit in candidates) {
+                val bearing = hit.pointIndex * 360.0 / ring.points.size
+                val (refinedIso, km) = refine(antipode, bearing, inner, ring.radiusKm, skip)
+                val iso = refinedIso ?: hit.iso
+                AppLog.d(TAG, "bearing ${bearing.roundToInt()}°: $iso at about ${km.roundToInt()} km")
+                if (best == null || km < best.second) best = Triple(iso, km, hit)
+            }
+            val (iso, km, hit) = best ?: continue
+            (toResolved(iso, km) ?: toResolved(hit.iso, hit.distanceKm))?.let { return it }
         }
         AppLog.w(TAG, "no land found within ${DEFAULT_SEARCH_RADII_KM.last().roundToInt()} km of the antipode")
         return null
+    }
+
+    private class Hit(val iso: String, val distanceKm: Double, val pointIndex: Int)
+
+    /** A few directions that found land, spread over the countries found rather than all in one, to keep the checks few. */
+    private fun candidateHits(hits: List<Hit>): List<Hit> =
+        hits.groupBy { it.iso }.values.flatMap { it.take(2) }.take(MAX_CANDIDATES)
+
+    /** Checks a handful of points between two rings, in parallel, along the bearing where land was found. */
+    private suspend fun refine(antipode: LatLon, bearingDeg: Double, innerKm: Double, outerKm: Double, skip: Set<String>): Pair<String?, Double> {
+        val probes = probesAlong(antipode, bearingDeg, innerKm, outerKm)
+        val land = coroutineScope {
+            probes.map { p -> async { geocoding.countryAt(p.point)?.takeIf { it !in skip } } }.awaitAll()
+        }
+        val km = estimateCoastKm(innerKm, outerKm, probes.map { it.distanceKm }, land.map { it != null })
+        // The first probe to find land may be a different country from the ring's hit; if none did, the ring's stands.
+        return land.firstOrNull { it != null } to km
     }
 
     private fun toResolved(iso: String, distanceKm: Double): ResolvedCountry? {
