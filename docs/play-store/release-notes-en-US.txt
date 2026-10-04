@@ -1,6 +1,6 @@
 Meanwhile 0.1.0 (build 5)
 
-Thanks for testing! News, and the sea, from the exact opposite side of the world.
+Thanks for testing!
 
 New: optional anonymous usage and crash reports (off by default), a steadier header, a more reliable location fix with a clear message if location is off, and "headlines are busy" instead of jumping to another country.
 
