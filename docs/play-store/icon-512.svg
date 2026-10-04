@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="22 22 64 64" width="512" height="512">
+  <!-- Play wants a plain square: it applies its own rounded mask, so no corner radius and no transparency. -->
+  <rect x="22" y="22" width="64" height="64" fill="#1B1F4B"/>
+  <circle cx="54" cy="54" r="26" fill="none" stroke="#EAF0FF" stroke-width="3"/>
+  <ellipse cx="54" cy="54" rx="10" ry="26" fill="none" stroke="#EAF0FF" stroke-opacity="0.55" stroke-width="2"/>
+  <line x1="35.6" y1="35.6" x2="72.4" y2="72.4" stroke="#FFB703" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="35.6" cy="35.6" r="5.5" fill="#EAF0FF"/>
+  <circle cx="72.4" cy="72.4" r="5.5" fill="#FFB703"/>
+</svg>

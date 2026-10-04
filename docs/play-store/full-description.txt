@@ -1,0 +1,32 @@
+Meanwhile finds the point exactly opposite you on Earth, your antipode, and shows what is happening there.
+
+While you read this, people on the other side of the planet are starting or ending their day. This app shows you their headlines.
+
+HOW IT WORKS
+- Allow approximate location, or just search for any place.
+- Meanwhile works out the point on the opposite side of the world.
+- If it lands on land, you get headlines from that country, grouped into Today, Yesterday and earlier.
+- If it lands in the ocean (and for most people it does), you start on the sea itself: wave height, swell, water temperature, current, and whether it is day or night there. One tap switches to headlines from the nearest land.
+
+THE SEA VIEW
+Most of the planet is water, so most antipodes are open ocean. The sea view shows conditions at the exact point, plus the local time and where the sun is. Sea data is for curiosity, not navigation.
+
+HEADLINES
+- Headlines appear as each source answers, so you see something quickly.
+- Tap one to read it on the publisher's own site.
+- Titles are shown as published, in their original language.
+- Headlines from small local outlets are tagged, because some places barely appear in the world's news.
+- Some places are quiet. A small island may have only a few stories a week, and Meanwhile shows what exists instead of padding the list.
+
+PRIVATE BY DEFAULT
+- Approximate (coarse) location only, used to find the point opposite you. It is not stored, and there is no account.
+- Search for a place instead of sharing your location if you prefer.
+- No ads.
+- Usage and crash reports are off unless you turn them on, and they never include your location or what you read.
+Details are in the app's About screen and the privacy policy.
+
+A HOBBY PROJECT
+Meanwhile is made by one person. It is free, has no ads, and is not a business. If you enjoy it you can buy me a coffee from the About screen; nothing is locked behind it.
+
+CREDITS
+Headlines come from the GDELT Project and a few public news feeds. Sea conditions are from Open-Meteo.com (CC BY 4.0, with data from national weather services). Meanwhile is not affiliated with them. Open source licenses are listed in the app.
