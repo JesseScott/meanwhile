@@ -23,6 +23,7 @@ fun Progress.text(): String = when (this) {
 }
 
 fun UiError.text(): String = when (this) {
+    UiError.LocationOff -> "Location is turned off on your phone. Turn it on, or search for a place."
     UiError.LocationUnavailable -> "Couldn't get your location. Try again, or search for a place."
     UiError.NoLandNearby -> "Couldn't find any land near your antipode. Try another place."
     UiError.NoHeadlines -> "No headlines found near your antipode. Try another place."

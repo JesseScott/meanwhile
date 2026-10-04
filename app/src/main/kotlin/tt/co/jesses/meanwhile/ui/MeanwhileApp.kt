@@ -133,6 +133,9 @@ fun MeanwhileApp(viewModel: MainViewModel) {
                         telemetry.log(TelemetryEvent.AboutOpened)
                         showAbout = true
                     },
+                    onOpenLocationSettings = {
+                        context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                    },
                     onOpenSettings = {
                         context.startActivity(
                             Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)),

@@ -85,7 +85,7 @@ sealed class TelemetryEvent(val name: String, val params: Map<String, Any> = emp
 val KNOWN_SOURCES = setOf("gdelt", "rss")
 
 /** The names of the screen's error types. Kept here as words so that nothing free-form can be sent in their place. */
-val KNOWN_ERRORS = setOf("LocationUnavailable", "NoLandNearby", "NoHeadlines", "Busy", "Offline", "Unknown")
+val KNOWN_ERRORS = setOf("LocationUnavailable", "LocationOff", "NoLandNearby", "NoHeadlines", "Busy", "Offline", "Unknown")
 
 /** Coarse on purpose: enough to see whether places are empty, thin or full. */
 fun bucketArticles(count: Int): String = when {
