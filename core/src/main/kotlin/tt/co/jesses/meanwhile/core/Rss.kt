@@ -120,33 +120,6 @@ fun parseFeed(
 /** A feed to read for a country. [requirePlaceName] is for regional feeds: keep only items that mention the place. */
 data class RssFeed(val url: String, val requirePlaceName: Boolean = false)
 
-private val RNZ_PACIFIC = RssFeed("https://www.rnz.co.nz/rss/pacific.xml", requirePlaceName = true)
-
-/**
- * Outlet feeds worth reading when GDELT has little, keyed by FIPS code. Each URL was fetched and parsed (the Pacific
- * ones on 2026-10-01, Madagascar's on 2026-10-04). Many local outlets block plain feed requests or don't publish
- * one (the Fiji Times, the Solomon Star and the Samoa Observer didn't work), so this grows by checking, not guessing.
- *
- * Madagascar is here because it is the antipode of the west coast of North America, GDELT's answer for it is often
- * empty or rate limited, and what it does have is mostly one misfiled Taiwanese site.
- */
-val CURATED_FEEDS: Map<String, List<RssFeed>> = buildMap {
-    put("TN", listOf(RssFeed("https://matangitonga.to/rss.xml"), RNZ_PACIFIC)) // Tonga: its own outlet, plus RNZ
-    put(
-        "MA",
-        listOf(
-            RssFeed("https://2424.mg/feed/"), // French, daily
-            RssFeed("https://newsmada.com/feed/"), // Malagasy and French
-            RssFeed("https://www.rfi.fr/fr/tag/madagascar/rss"), // French, the Madagascar topic feed
-            RssFeed("https://allafrica.com/tools/headlines/rdf/madagascar/headlines.rdf"), // English
-        ),
-    )
-    // RNZ Pacific covers the whole region, so it is filtered to items that name the country.
-    for (fips in listOf("WS", "FJ", "NH", "BP", "KR", "TV", "NR", "CW", "NE", "FM", "RM", "PS", "PP", "NC", "FP", "AQ", "GQ", "CQ", "TL", "WF")) {
-        put(fips, listOf(RNZ_PACIFIC))
-    }
-}
-
 /** Reads a hand-picked list of outlet RSS feeds. A country with no feeds simply has no articles from here. */
 class RssNewsSource(
     private val client: HttpClient,

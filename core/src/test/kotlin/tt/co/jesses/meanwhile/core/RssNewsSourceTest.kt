@@ -133,4 +133,21 @@ class RssNewsSourceTest {
 
         assertEquals(setOf("Fresh", "Undated"), titles)
     }
+
+    @Test
+    fun everyCuratedFeedIsHttpsAndKeyedByAFipsCodeWeKnow() {
+        // Android blocks cleartext traffic, so one plain-http feed would fail every load that includes it.
+        val all = CURATED_FEEDS.flatMap { (fips, feeds) -> feeds.map { fips to it } }
+        assertTrue(all.isNotEmpty())
+        assertTrue(all.all { (_, feed) -> feed.url.startsWith("https://") }, "all curated feeds must be https")
+        assertTrue(CURATED_FEEDS.keys.all { it.length == 2 && it.all(Char::isUpperCase) }, "keys are two-letter FIPS codes")
+    }
+
+    @Test
+    fun theLandingCountriesThatMatterMostHaveBackupFeeds() {
+        // New Zealand, Australia, Peru, Argentina, Brazil, Mauritius's neighbour Madagascar, Japan, Colombia, Chile.
+        listOf("NZ", "AS", "PE", "AR", "BR", "MA", "JA", "CO", "CI").forEach {
+            assertTrue(CURATED_FEEDS[it].orEmpty().isNotEmpty(), "no backup feeds for $it")
+        }
+    }
 }
