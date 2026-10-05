@@ -1,8 +1,8 @@
-Meanwhile 0.1.0 (build 7)
+Meanwhile 0.1.0 (build 8)
 
 Thanks for testing!
 
-New: backup local news feeds for Madagascar (a common first stop for the west coast of North America), optional anonymous usage and crash reports (off by default), a more reliable location fix, and "headlines are busy" instead of jumping to another country.
+New: backup local news feeds for the places the west coast, Europe and Asia land on (Madagascar, New Zealand, Australia, Peru, Japan and more), a quicker "headlines are busy" message, optional anonymous usage and crash reports (off by default), and a more reliable location fix.
 
 Try: location, search, ocean and land, pull to refresh, dark mode.
 
