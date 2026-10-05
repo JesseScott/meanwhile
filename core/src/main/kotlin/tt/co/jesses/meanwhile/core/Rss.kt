@@ -12,18 +12,13 @@ import org.w3c.dom.NodeList
 import org.xml.sax.InputSource
 import java.io.StringReader
 import java.net.URI
-import java.time.OffsetDateTime
-import java.time.ZoneOffset
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
+import java.time.Instant
 import javax.xml.parsers.DocumentBuilder
 import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.coroutines.cancellation.CancellationException
 
 /** Sent to the sites we fetch feeds from, so they can see what is asking. */
 const val NEWS_USER_AGENT = "Meanwhile/0.1 (hobby app; +https://jesses.co.tt)"
-
-private val SEEN_OUT = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneOffset.UTC)
 
 /** A DOM builder that refuses DTDs and external entities, so a hostile feed can't pull in files or make requests. */
 private fun secureBuilder(): DocumentBuilder {
@@ -74,14 +69,6 @@ private fun cleanText(raw: String): String = unescapeHtml(TAGS.replace(unescapeH
 private fun hostOf(url: String): String =
     runCatching { URI(url.trim()).host }.getOrNull()?.removePrefix("www.")?.lowercase().orEmpty()
 
-private fun toSeenDate(text: String): String {
-    if (text.isBlank()) return ""
-    val instant = runCatching { ZonedDateTime.parse(text.trim(), DateTimeFormatter.RFC_1123_DATE_TIME).toInstant() }.getOrNull()
-        ?: runCatching { OffsetDateTime.parse(text.trim()).toInstant() }.getOrNull()
-        ?: return ""
-    return SEEN_OUT.format(instant)
-}
-
 /**
  * Parses an RSS 2.0 or Atom feed into articles, newest order as published. [keep] sees each item's title and a
  * tag-free summary, and can drop it. Anything unparseable gives an empty list, which means "no articles".
@@ -89,6 +76,7 @@ private fun toSeenDate(text: String): String {
 fun parseFeed(
     xml: String,
     via: String,
+    now: Instant = Instant.now(),
     keep: (title: String, summary: String) -> Boolean = { _, _ -> true },
 ): List<Article> {
     val doc = try {
@@ -122,7 +110,7 @@ fun parseFeed(
         Article(
             url = link,
             title = title,
-            seenDate = toSeenDate(item.childText("pubDate", "published", "updated", "dc:date")),
+            seenDate = seenDateFor(item.childText("pubDate", "published", "updated", "dc:date"), now),
             domain = domain,
             via = via,
         )
@@ -164,6 +152,8 @@ class RssNewsSource(
     private val client: HttpClient,
     private val feeds: Map<String, List<RssFeed>> = CURATED_FEEDS,
     private val maxArticles: Int = 50,
+    private val maxAgeMs: Long = 7 * 24 * 60 * 60 * 1000L,
+    private val clock: () -> Long = System::currentTimeMillis,
 ) : NewsSource {
     override suspend fun headlines(place: NewsPlace): NewsResult {
         val list = feeds[place.fips].orEmpty()
@@ -183,7 +173,11 @@ class RssNewsSource(
         }
         if (failures.size == list.size) throw failures.last()
 
-        val newest = articles.distinctBy { it.url }.sortedByDescending { it.seenDate }.take(maxArticles)
+        // Some feeds keep years of items. This window is "the last week", so older ones don't belong, however the feed
+        // sorts them; items with no usable date are kept, since we can't tell.
+        val oldest = Instant.ofEpochMilli(clock() - maxAgeMs)
+        val recent = articles.filter { a -> a.seenInstant()?.let { it >= oldest } ?: true }
+        val newest = recent.distinctBy { it.url }.sortedByDescending { it.seenDate }.take(maxArticles)
         return NewsResult(newest, WINDOW)
     }
 
@@ -194,7 +188,7 @@ class RssNewsSource(
             if (feed.requirePlaceName) { title, summary ->
                 title.contains(place.name, ignoreCase = true) || summary.contains(place.name, ignoreCase = true)
             } else { _, _ -> true }
-        return parseFeed(response.bodyAsText(), VIA, keep)
+        return parseFeed(response.bodyAsText(), VIA, Instant.ofEpochMilli(clock()), keep)
     }
 
     private companion object {

@@ -14,6 +14,7 @@ import kotlin.test.assertTrue
 
 class RssNewsSourceTest {
     private val tonga = NewsPlace("TO", "TN", "Tonga")
+    private val FIXED_NOW = java.time.Instant.parse("2026-10-03T00:00:00Z").toEpochMilli()
     private val local = RssFeed("https://local.example/rss")
     private val regional = RssFeed("https://regional.example/rss", requirePlaceName = true)
 
@@ -33,7 +34,8 @@ class RssNewsSourceTest {
             val (status, body) = responses[url] ?: (HttpStatusCode.NotFound to "")
             respond(content = body, status = status, headers = headersOf(HttpHeaders.ContentType, "application/rss+xml"))
         }
-        return RssNewsSource(HttpClient(engine), feeds)
+        // A fixed clock, so the fixtures (all dated the first days of October 2026) never age out of the week window.
+        return RssNewsSource(HttpClient(engine), feeds, clock = { FIXED_NOW })
     }
 
     @Test
@@ -114,5 +116,21 @@ class RssNewsSourceTest {
         assertTrue(feeds.size >= 3)
         assertTrue(feeds.all { it.url.startsWith("https://") })
         assertTrue(feeds.none { it.requirePlaceName }, "these are Madagascar feeds already, so no name filter")
+    }
+
+    @Test
+    fun itemsOlderThanAWeekAreDroppedButUndatedOnesStay() = runTest {
+        val body = """<rss><channel>""" +
+            item("Fresh", "https://x.example/fresh", "Sun, 04 Oct 2026 08:00:00 +0000") +
+            item("Ancient", "https://x.example/ancient", "Fri, 18 Dec 2020 14:42:00 +0000") +
+            item("Undated", "https://x.example/undated", "") +
+            "</channel></rss>"
+        val engine = MockEngine { respond(content = body, status = HttpStatusCode.OK, headers = headersOf(HttpHeaders.ContentType, "application/xml")) }
+        val now = java.time.Instant.parse("2026-10-05T00:00:00Z").toEpochMilli()
+        val source = RssNewsSource(HttpClient(engine), feeds = mapOf("TN" to listOf(local)), clock = { now })
+
+        val titles = source.headlines(tonga).articles.map { it.title }.toSet()
+
+        assertEquals(setOf("Fresh", "Undated"), titles)
     }
 }
