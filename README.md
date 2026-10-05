@@ -28,7 +28,7 @@ The first two are searched from Madrid (the opposite point is in New Zealand); t
    | Priority | Source | Used for |
    | --- | --- | --- |
    | 1 | [GDELT](https://www.gdeltproject.org) DOC API | Articles published in that country, last 24 hours, widening to 7 days if thin |
-   | 2 | Curated outlet feeds (RSS) | Small Pacific nations GDELT barely covers (Tonga's Matangi Tonga, RNZ Pacific filtered by country, 20 places in all) |
+   | 2 | Curated outlet feeds (RSS) | Backup local outlets for the places people land on and GDELT answers badly or not at all: Madagascar, New Zealand, Australia, Peru, Argentina, Brazil, Japan and about 20 more, plus RNZ Pacific for small Pacific places (see [`docs/coverage`](docs/coverage/README.md)) |
 
    Results are merged in that order and de-duplicated by title. A lower-priority source is skipped if the higher ones already produced enough.
 4. **Clean-up.** A domain blocklist, a language-fit rule (headlines in the wrong language for the country are dropped; this catches outlets GDELT files under the wrong place, such as a Taiwanese site tagged as Madagascar), and a noise filter (job ads and the like), then a cap per outlet so one site can't fill the list.
@@ -45,8 +45,8 @@ The first two are searched from Madrid (the opposite point is in New Zealand); t
 | Architecture | MVI: `UiEvent` into `MainViewModel`, out comes an immutable `UiState` plus one-shot `UiEffect`s |
 | Modules | `:core` (pure Kotlin/JVM: geometry, sources, cleanup, settings, telemetry vocabulary) and `:app` (Android UI) |
 | Networking | Ktor client on OkHttp, kotlinx.serialization |
-| Tests | 117 unit tests (111 in `:core`, 6 in `:app`), no network needed (Ktor's mock engine and virtual time) |
-| GDELT rate | One request per 5.5 s, retried on 429 |
+| Tests | Over 130 unit tests across `:core` and `:app`, no network needed (Ktor's mock engine and virtual time); a separate live check runs candidate feeds through the app's own parser |
+| GDELT rate | One request per 5.5 s; after a 429 or a non-JSON reply it stands down for 1 to 15 minutes instead of retrying |
 | Result limits | At most 100 headlines, 8 per outlet |
 | Countries with explicit language rules | 11 (MG, TO, WS, NU, FM, TV, CC, LY, ME, AI, CO) |
 | Dependencies | Open source licences are listed in the app (About, then Open source licenses) |
