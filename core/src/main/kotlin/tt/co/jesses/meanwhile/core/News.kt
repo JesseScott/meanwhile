@@ -78,19 +78,29 @@ interface NewsSource {
 }
 
 /**
- * GDELT DOC 2.0 `sourcecountry:` queries. GDELT allows one request per 5 seconds, so every call
- * goes through a shared gate, and a 429 is retried.
+ * GDELT DOC 2.0 `sourcecountry:` queries.
+ *
+ * GDELT documents one request per 5 seconds, but in practice its limiter is stricter (a request 5.2 seconds after
+ * the last one finished can still be refused, blocks last a minute or more, and backing off after a 429 does not
+ * reliably end one), and it runs close to its own capacity, so some refusals have nothing to do with us. So:
+ * every call goes through a shared gate spaced from when the *previous response finished*; a 429 is never retried
+ * on the spot; and after a refusal the whole source stands down for a while ([coolDownsMs], longer after each
+ * further refusal, forgotten after a success) and answers "rate limited" at once without touching the network.
+ * That keeps us from extending a block ourselves, and gives the caller a quick answer to fall back on.
  */
 class GdeltNewsSource(
     private val client: HttpClient,
     private val minIntervalMs: Long = 5_500,
-    private val retryDelayMs: Long = 15_000,
     private val minArticles: Int = 15,
     private val baseUrl: String = "https://api.gdeltproject.org/api/v2/doc/doc",
     private val clock: () -> Long = System::currentTimeMillis,
+    private val coolDownsMs: List<Long> = listOf(60_000, 120_000, 300_000, 600_000, 900_000),
 ) : NewsSource {
     private val gate = Mutex()
     private var lastCallAt = 0L
+
+    @Volatile private var standDownUntil = 0L
+    @Volatile private var refusals = 0
 
     override suspend fun headlines(place: NewsPlace): NewsResult {
         val fips = place.fips
@@ -112,40 +122,59 @@ class GdeltNewsSource(
     }
 
     private suspend fun fetch(fips: String, timespan: String): List<Article> {
-        repeat(MAX_ATTEMPTS) { attempt ->
-            val label = "GDELT $fips/$timespan attempt ${attempt + 1}/$MAX_ATTEMPTS"
-            val (status, body) = throttled(label) {
-                Trace.timed("$label request") {
-                    val response = client.get(baseUrl) {
-                        parameter("query", "sourcecountry:$fips")
-                        parameter("mode", "artlist")
-                        parameter("format", "json")
-                        parameter("maxrecords", 250)
-                        parameter("timespan", timespan)
-                    }
-                    response.status to response.bodyAsText()
+        val label = "GDELT $fips/$timespan"
+        val remaining = standDownUntil - clock()
+        if (remaining > 0) {
+            Trace.log { "$label skipped: standing down for another ${remaining / 1000} s after a refusal" }
+            throw RateLimitedException("GDELT")
+        }
+        val (status, body) = throttled(label) {
+            Trace.timed("$label request") {
+                val response = client.get(baseUrl) {
+                    parameter("query", "sourcecountry:$fips")
+                    parameter("mode", "artlist")
+                    parameter("format", "json")
+                    parameter("maxrecords", 250)
+                    parameter("timespan", timespan)
                 }
-            }
-            Trace.log { "$label -> HTTP ${status.value}, ${body.length} chars" }
-            when (status) {
-                HttpStatusCode.OK -> {
-                    // Drop misfiled outlets before counting, so a feed padded with them still falls back to 7d.
-                    val articles = parseArtList(body)
-                        .filter { it.title.isNotBlank() }
-                        .distinctBy { it.title }
-                        .cleaned(fips)
-                        .map { it.copy(via = VIA) }
-                    Trace.log { "$label parsed ${articles.size} articles" }
-                    return articles
-                }
-                HttpStatusCode.TooManyRequests -> {
-                    Trace.log { "$label rate limited, waiting ${retryDelayMs} ms" }
-                    delay(retryDelayMs)
-                }
-                else -> throw SourceFailedException("GDELT", "HTTP ${status.value}")
+                response.status to response.bodyAsText()
             }
         }
-        throw RateLimitedException("GDELT")
+        Trace.log { "$label -> HTTP ${status.value}, ${body.length} chars" }
+        when (status) {
+            HttpStatusCode.OK -> {
+                // GDELT sometimes sends an error as a plain-text page with a 200. That is a refusal, not a place with
+                // no news: reading it as "no articles" is how the app once decided Madagascar was quiet and moved on.
+                val text = body.trim()
+                if (text.isNotEmpty() && !text.startsWith("{")) {
+                    Trace.log { "$label: HTTP 200 with a body that is not JSON (${text.take(40)}), treating it as a refusal" }
+                    refused(label)
+                    throw RateLimitedException("GDELT")
+                }
+                refusals = 0
+                // Drop misfiled outlets before counting, so a feed padded with them still falls back to 7d.
+                val articles = parseArtList(body)
+                    .filter { it.title.isNotBlank() }
+                    .distinctBy { it.title }
+                    .cleaned(fips)
+                    .map { it.copy(via = VIA) }
+                Trace.log { "$label parsed ${articles.size} articles" }
+                return articles
+            }
+            HttpStatusCode.TooManyRequests -> {
+                refused(label)
+                throw RateLimitedException("GDELT")
+            }
+            else -> throw SourceFailedException("GDELT", "HTTP ${status.value}")
+        }
+    }
+
+    /** Stand down, for longer each time in a row. */
+    private fun refused(label: String) {
+        val wait = coolDownsMs[minOf(refusals, coolDownsMs.lastIndex)]
+        refusals++
+        standDownUntil = clock() + wait
+        Trace.log { "$label refused (#$refusals in a row); standing down for ${wait / 1000} s" }
     }
 
     private suspend fun <T> throttled(label: String, block: suspend () -> T): T = gate.withLock {
@@ -162,7 +191,6 @@ class GdeltNewsSource(
     }
 
     private companion object {
-        const val MAX_ATTEMPTS = 3
         const val VIA = "gdelt"
     }
 }

@@ -34,7 +34,7 @@ class GdeltNewsSourceTest {
                 headers = headersOf(HttpHeaders.ContentType, "application/json"),
             )
         }
-        return GdeltNewsSource(HttpClient(engine), minIntervalMs = 0, retryDelayMs = 0)
+        return GdeltNewsSource(HttpClient(engine), minIntervalMs = 0)
     }
 
     @Test
@@ -72,7 +72,7 @@ class GdeltNewsSourceTest {
         val engine = MockEngine {
             respond(content = "Please limit requests", status = HttpStatusCode.TooManyRequests, headers = headersOf(HttpHeaders.ContentType, "text/plain"))
         }
-        val source = GdeltNewsSource(HttpClient(engine), minIntervalMs = 0, retryDelayMs = 0)
+        val source = GdeltNewsSource(HttpClient(engine), minIntervalMs = 0)
 
         val error = kotlin.test.assertFailsWith<RateLimitedException> { source.headlines(madagascar) }
 
@@ -108,7 +108,7 @@ class GdeltNewsSourceTest {
                 headers = headersOf(HttpHeaders.ContentType, "application/json"),
             )
         }
-        return GdeltNewsSource(HttpClient(engine), minIntervalMs = 0, retryDelayMs = 0)
+        return GdeltNewsSource(HttpClient(engine), minIntervalMs = 0)
     }
 
     @Test
@@ -143,5 +143,92 @@ class GdeltNewsSourceTest {
         val result = source.headlines(madagascar)
 
         assertEquals(emptyList(), result.articles)
+    }
+
+    /** A day with enough articles that the source does not go on to ask for the week. */
+    private fun healthyDay() = json(french(15, "d"))
+
+    /** Answers with the given statuses in turn (the last one repeats) and counts the requests that reach it. */
+    private class Scripted(vararg val statuses: HttpStatusCode, private val okBody: String = "{}") {
+        var calls = 0
+        val engine = MockEngine {
+            val status = statuses[minOf(calls, statuses.lastIndex)]
+            calls++
+            respond(
+                content = if (status == HttpStatusCode.OK) okBody else "Please limit requests to one every 5 seconds",
+                status = status,
+                headers = headersOf(HttpHeaders.ContentType, "application/json"),
+            )
+        }
+    }
+
+    @Test
+    fun aRefusalMakesTheSourceStandDownWithoutTouchingTheNetwork() = runTest {
+        var now = 1_000_000L
+        val script = Scripted(HttpStatusCode.TooManyRequests, HttpStatusCode.OK, okBody = healthyDay())
+        val source = GdeltNewsSource(HttpClient(script.engine), minIntervalMs = 0, clock = { now }, coolDownsMs = listOf(60_000))
+
+        kotlin.test.assertFailsWith<RateLimitedException> { source.headlines(madagascar) }
+        assertEquals(1, script.calls)
+
+        // Still inside the stand-down: refused at once, and GDELT is not asked.
+        now += 30_000
+        kotlin.test.assertFailsWith<RateLimitedException> { source.headlines(madagascar) }
+        assertEquals(1, script.calls)
+
+        // After it, the source tries again.
+        now += 31_000
+        source.headlines(madagascar)
+        assertEquals(2, script.calls)
+    }
+
+    @Test
+    fun theStandDownGrowsWithEachRefusalInARowAndIsForgottenAfterASuccess() = runTest {
+        var now = 1_000_000L
+        val script = Scripted(
+            HttpStatusCode.TooManyRequests, HttpStatusCode.TooManyRequests, HttpStatusCode.OK, HttpStatusCode.TooManyRequests,
+            okBody = healthyDay(),
+        )
+        val source = GdeltNewsSource(HttpClient(script.engine), minIntervalMs = 0, clock = { now }, coolDownsMs = listOf(10_000, 20_000, 30_000))
+
+        suspend fun tryOnce() = runCatching { source.headlines(madagascar) }
+
+        tryOnce() // refusal #1: stand down 10 s
+        now += 11_000
+        tryOnce() // refusal #2: stand down 20 s
+        assertEquals(2, script.calls)
+
+        now += 15_000 // 15 s into a 20 s stand-down
+        tryOnce()
+        assertEquals(2, script.calls, "still standing down")
+
+        now += 6_000 // past it
+        tryOnce() // an answer: the count of refusals in a row is forgotten
+        assertEquals(3, script.calls)
+
+        tryOnce() // the source is not standing down after a success, so this one is asked and refused: stand down 10 s again
+        assertEquals(4, script.calls)
+        now += 11_000
+        tryOnce()
+        assertEquals(5, script.calls, "back to the shortest stand-down, not the third")
+    }
+
+    @Test
+    fun aPlainTextPageSentWithA200IsARefusalNotAQuietPlace() = runTest {
+        val script = Scripted(HttpStatusCode.OK, okBody = "Please limit requests to one every 5 seconds or contact us")
+        val source = GdeltNewsSource(HttpClient(script.engine), minIntervalMs = 0)
+
+        kotlin.test.assertFailsWith<RateLimitedException> { source.headlines(madagascar) }
+    }
+
+    @Test
+    fun aValidEmptyAnswerIsStillAQuietPlace() = runTest {
+        val script = Scripted(HttpStatusCode.OK, okBody = "{}")
+        val source = GdeltNewsSource(HttpClient(script.engine), minIntervalMs = 0)
+
+        val result = source.headlines(madagascar)
+
+        assertEquals(emptyList(), result.articles)
+        assertEquals(2, script.calls, "an empty day still tries the week")
     }
 }
