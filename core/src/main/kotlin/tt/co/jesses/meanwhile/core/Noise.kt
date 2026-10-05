@@ -9,7 +9,12 @@ package tt.co.jesses.meanwhile.core
  */
 val DEFAULT_TITLE_FILTERS: Map<String, List<Regex>> = mapOf(
     // Government and agency job ads, e.g. "9529 Ministry of Finance - TASP vacancy procurement officer 1 - 23 October 2026".
-    "matangitonga.to" to listOf(Regex("""^\d{3,5}\s+.*\bvacanc(y|ies)\b""", RegexOption.IGNORE_CASE)),
+    // Legal and meeting notices, e.g. "Notice of Annual General Meeting", alone, after a posting number like the job ads,
+    // or after the issuer's name ("Tonga Rugby Union - Notice of ...").
+    "matangitonga.to" to listOf(
+        Regex("""^\d{3,5}\s+.*\bvacanc(y|ies)\b""", RegexOption.IGNORE_CASE),
+        Regex("""^(\d{3,5}\s+)?([^-–:]{1,60}\s[-–:]\s+)?Notices?\s+of\b""", RegexOption.IGNORE_CASE),
+    ),
 )
 
 /** Drops articles whose title matches a filter for their outlet, including the outlet's subdomains. */

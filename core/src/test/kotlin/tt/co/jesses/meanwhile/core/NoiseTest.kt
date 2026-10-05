@@ -49,6 +49,22 @@ class NoiseTest {
     }
 
     @Test
+    fun dropsLegalAndMeetingNoticesButNotStoriesAboutThem() {
+        // The first is the real title from Matangi's feed (2026-10-05); the rest are variations on the pattern.
+        val notices = listOf(
+            "Notice of Special General Meeting, Tonga Rugby Union Inc.",
+            "Notice of Annual General Meeting - Tonga Rugby Union",
+            "9531 Tonga Rugby Union - Notice of Annual General Meeting 2026",
+            "NOTICE OF APPLICATION for a liquor licence",
+        ).map { article("matangitonga.to", it) }
+        val news = listOf(
+            "Rugby union holds annual meeting after notice of changes",
+            "Government gives notice of new fisheries rules",
+        ).map { article("matangitonga.to", it) }
+        assertEquals(news, (notices + news).withoutNoise())
+    }
+
+    @Test
     fun matchesCaseInsensitivelyAndAcceptsACustomTable() {
         val filters = mapOf("example.org" to listOf(Regex("^Sponsored:", RegexOption.IGNORE_CASE)))
         val articles = listOf(article("example.org", "SPONSORED: buy now"), article("example.org", "A real story"))
