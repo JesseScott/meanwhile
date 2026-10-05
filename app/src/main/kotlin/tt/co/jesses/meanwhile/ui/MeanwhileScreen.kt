@@ -63,6 +63,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -273,6 +274,15 @@ private fun SearchBar(
     val focus = LocalFocusManager.current
     val density = LocalDensity.current
     var barWidth by remember { mutableStateOf(0.dp) }
+    // Closing the popup can hand focus back to the field, so clear it again once the matches are gone.
+    var pickedPlace by remember { mutableStateOf(false) }
+    LaunchedEffect(places.isEmpty(), pickedPlace) {
+        if (pickedPlace && places.isEmpty()) {
+            keyboard?.hide()
+            focus.clearFocus(force = true)
+            pickedPlace = false
+        }
+    }
     Box {
         OutlinedTextField(
             value = query,
@@ -321,6 +331,7 @@ private fun SearchBar(
                     onClick = {
                         keyboard?.hide()
                         focus.clearFocus(force = true)
+                        pickedPlace = true
                         onPick(place)
                     },
                 )
