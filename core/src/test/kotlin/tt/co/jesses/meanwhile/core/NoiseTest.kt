@@ -50,8 +50,9 @@ class NoiseTest {
 
     @Test
     fun dropsLegalAndMeetingNoticesButNotStoriesAboutThem() {
-        // Illustrative wording: the real Tonga Rugby Union title was not kept (issue #30).
+        // The first is the real title from Matangi's feed (2026-10-05); the rest are variations on the pattern.
         val notices = listOf(
+            "Notice of Special General Meeting, Tonga Rugby Union Inc.",
             "Notice of Annual General Meeting - Tonga Rugby Union",
             "9531 Tonga Rugby Union - Notice of Annual General Meeting 2026",
             "NOTICE OF APPLICATION for a liquor licence",
