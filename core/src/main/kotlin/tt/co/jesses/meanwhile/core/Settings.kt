@@ -32,7 +32,7 @@ object AnalyticsPrompt {
 }
 
 /**
- * The app's few saved settings, on Jetpack DataStore. Kept in the core module so it can be tested on the JVM.
+ * The app's few saved settings and the recently picked places, on Jetpack DataStore. Kept in the core module so it can be tested on the JVM.
  *
  * The choice is stored by name, and anything unrecognised reads as [AnalyticsChoice.Unset], so a renamed or removed
  * value can't crash the app or silently turn collection on. A damaged settings file reads as defaults.
@@ -49,12 +49,23 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
 
     val introSeen: Flow<Boolean> = data.map { it[INTRO_SEEN] ?: false }
 
+    /** The last few places the user picked from a search, newest first. Kept on the phone only. */
+    val recentPlaces: Flow<List<RecentPlace>> = data.map { RecentPlaces.decode(it[RECENT_PLACES]) }
+
     suspend fun setAnalyticsChoice(choice: AnalyticsChoice) {
         store.edit { it[ANALYTICS_CHOICE] = choice.name }
     }
 
     suspend fun setIntroSeen() {
         store.edit { it[INTRO_SEEN] = true }
+    }
+
+    suspend fun addRecentPlace(place: RecentPlace) {
+        store.edit { it[RECENT_PLACES] = RecentPlaces.encode(RecentPlaces.add(RecentPlaces.decode(it[RECENT_PLACES]), place)) }
+    }
+
+    suspend fun clearRecentPlaces() {
+        store.edit { it.remove(RECENT_PLACES) }
     }
 
     /** Counts a load that gave the user something. Returns the new total. */
@@ -82,5 +93,6 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val INTRO_SEEN = booleanPreferencesKey("intro_seen")
         val GOOD_LOADS = intPreferencesKey("good_loads")
         val PROMPTS_SHOWN = intPreferencesKey("prompts_shown")
+        val RECENT_PLACES = stringPreferencesKey("recent_places")
     }
 }
