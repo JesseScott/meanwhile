@@ -11,7 +11,7 @@ import tt.co.jesses.meanwhile.core.Recency
  */
 
 /** What the app is, in one line. Shown under the app name on the main screen and on the location intro. */
-const val TAGLINE = "news from the other side of the world"
+const val TAGLINE = "News from the other side of the world"
 
 fun Progress.text(): String = when (this) {
     Progress.Locating -> "Getting your location…"
