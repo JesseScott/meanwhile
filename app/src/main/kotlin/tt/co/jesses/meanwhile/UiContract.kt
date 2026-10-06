@@ -51,6 +51,8 @@ data class UiState(
     /** The window the articles came from: "24h", or "7d" when the last day was thin. */
     val window: String = "24h",
     val searchResults: List<NamedPlace> = emptyList(),
+    /** The last few places picked from a search, newest first, offered again under the empty search bar. */
+    val recentPlaces: List<NamedPlace> = emptyList(),
     /** Set with [Status.Error]. */
     val error: UiError? = null,
     val notice: UiNotice? = null,
@@ -75,6 +77,7 @@ sealed interface UiEvent {
     data object LocationDenied : UiEvent
     data class Search(val query: String) : UiEvent
     data class PickPlace(val place: NamedPlace) : UiEvent
+    data object ClearRecentPlaces : UiEvent
     data class SetMode(val mode: ViewMode, val via: ModeSwitchVia = ModeSwitchVia.Switch) : UiEvent
     /** Pull to refresh, or "try again" after an error. */
     data object Refresh : UiEvent

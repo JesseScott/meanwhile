@@ -118,7 +118,8 @@ fun AboutScreen(onBack: () -> Unit) {
                 )
                 Bullet(
                     "Stored on your phone: headlines for up to three days (so something shows quickly), whether you have seen " +
-                        "the welcome screen, your choice about reports, and a count of how often the app has asked.",
+                        "the welcome screen, your choice about reports, a count of how often the app has asked, and the last three " +
+                        "places you picked from a search (the Recent places list has a Clear button).",
                 )
                 Bullet(
                     "No ads. Tapping a headline opens the publisher's own website in your browser, which has its own privacy policy.",

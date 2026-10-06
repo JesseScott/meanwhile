@@ -128,4 +128,76 @@ class SettingsRepositoryTest {
         assertFalse(ask(AnalyticsChoice.Accepted, 99, 0, true))
         assertFalse(ask(AnalyticsChoice.Rejected, 99, 0, true))
     }
+
+    private fun place(label: String, lat: Double = 1.0, lon: Double = 2.0) = RecentPlace(label, lat, lon)
+
+    @Test
+    fun keepsTheLastThreePlacesNewestFirst() = runTest {
+        val (repo, _) = repository()
+        assertEquals(emptyList(), repo.recentPlaces.first())
+
+        listOf("Reykjavik", "Lima", "Hobart", "Nuuk").forEach { repo.addRecentPlace(place(it)) }
+        assertEquals(listOf("Nuuk", "Hobart", "Lima"), repo.recentPlaces.first().map { it.label })
+    }
+
+    @Test
+    fun pickingAPlaceAgainMovesItToTheFrontInsteadOfRepeatingIt() = runTest {
+        val (repo, _) = repository()
+        listOf("Reykjavik", "Lima", "reykjavik").forEach { repo.addRecentPlace(place(it, lat = 64.1, lon = -21.9)) }
+        val places = repo.recentPlaces.first()
+        assertEquals(listOf("reykjavik", "Lima"), places.map { it.label })
+        assertEquals(LatLon(64.1, -21.9), places.first().point)
+    }
+
+    @Test
+    fun twoDifferentPlacesWithTheSameLabelAreBothKept() = runTest {
+        val (repo, store) = repository()
+        repo.addRecentPlace(place("Springfield", lat = 39.80, lon = -89.64))
+        repo.addRecentPlace(place("Lima"))
+        repo.addRecentPlace(place("Springfield", lat = 37.21, lon = -93.29))
+        assertEquals(listOf("Springfield", "Lima", "Springfield"), repo.recentPlaces.first().map { it.label })
+
+        // The first Springfield again, a few metres off: it moves to the front and is not listed twice.
+        repo.addRecentPlace(place("springfield", lat = 39.801, lon = -89.641))
+        val places = repo.recentPlaces.first()
+        assertEquals(listOf("springfield", "Springfield", "Lima"), places.map { it.label })
+        assertEquals(listOf(39.801, 37.21), places.take(2).map { it.lat })
+
+        // A stored list that repeats a place is tidied on reading, and keeps same-named places that are far apart.
+        store.edit {
+            it[stringPreferencesKey("recent_places")] =
+                """[{"label":"Springfield","lat":39.8,"lon":-89.64},{"label":"Springfield","lat":39.8,"lon":-89.64},{"label":"Springfield","lat":37.21,"lon":-93.29}]"""
+        }
+        assertEquals(listOf(39.8, 37.21), repo.recentPlaces.first().map { it.lat })
+    }
+
+    @Test
+    fun recentPlacesCanBeCleared() = runTest {
+        val (repo, _) = repository()
+        repo.addRecentPlace(place("Lima"))
+        repo.clearRecentPlaces()
+        assertEquals(emptyList(), repo.recentPlaces.first())
+    }
+
+    @Test
+    fun damagedOrOutOfRangeRecentPlacesAreDroppedInsteadOfCrashing() = runTest {
+        val (repo, store) = repository()
+        val key = stringPreferencesKey("recent_places")
+        store.edit { it[key] = "not json" }
+        assertEquals(emptyList(), repo.recentPlaces.first())
+
+        store.edit { it[key] = """[{"label":"Nowhere","lat":123.0,"lon":0.0},{"label":"","lat":1.0,"lon":1.0},{"label":"Lima","lat":-12.0,"lon":-77.0}]""" }
+        assertEquals(listOf("Lima"), repo.recentPlaces.first().map { it.label })
+
+        // A longer list than the app would write is cut down, and adding still works on top of it.
+        store.edit { prefs -> prefs[key] = RecentPlacesTestData.fivePlacesJson }
+        assertEquals(RecentPlaces.MAX, repo.recentPlaces.first().size)
+        repo.addRecentPlace(place("Hobart"))
+        assertEquals("Hobart", repo.recentPlaces.first().first().label)
+        assertEquals(RecentPlaces.MAX, repo.recentPlaces.first().size)
+    }
+}
+
+private object RecentPlacesTestData {
+    val fivePlacesJson = (1..5).joinToString(prefix = "[", postfix = "]") { """{"label":"Place $it","lat":$it.0,"lon":$it.0}""" }
 }
