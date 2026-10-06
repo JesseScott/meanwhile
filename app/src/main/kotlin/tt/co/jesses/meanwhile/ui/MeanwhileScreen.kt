@@ -6,6 +6,8 @@ import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.window.PopupProperties
@@ -124,6 +126,17 @@ fun MeanwhileScreen(
 ) {
     // Headlines sit under Today / Yesterday / Earlier headings; a late arrival slots into its own day.
     val groups = remember(state.articles) { state.articles.groupedByRecency(Instant.now(), ZoneId.systemDefault()) }
+    // The search text and focus live here because the list below reacts to them: an empty, focused bar (or a screen
+    // with nothing on it yet) offers the recently picked places at the top of the list.
+    var query by rememberSaveable { mutableStateOf("") }
+    var searchFocused by remember { mutableStateOf(false) }
+    val showRecent = state.recentPlaces.isNotEmpty() && state.searchResults.isEmpty() && query.isEmpty() &&
+        (searchFocused || state.status == Status.Idle)
+    val listState = rememberLazyListState()
+    val keyboard = LocalSoftwareKeyboardController.current
+    val focus = LocalFocusManager.current
+    // The list may be scrolled down when the bar is tapped; bring the recent places into view.
+    LaunchedEffect(showRecent) { if (showRecent) listState.scrollToItem(0) }
     BoxWithConstraints(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize()) {
         // The part that stays put. It only ever holds things whose size doesn't depend on what is loading:
@@ -141,6 +154,9 @@ fun MeanwhileScreen(
             Header(state, onOpenAbout)
             if (state.antipodeIsWater) ModeSwitch(state.mode) { onEvent(UiEvent.SetMode(it)) }
             SearchBar(
+                query = query,
+                onQueryChange = { query = it },
+                onFocusChange = { searchFocused = it },
                 places = state.searchResults,
                 onSearch = { onEvent(UiEvent.Search(it)) },
                 onPick = { onEvent(UiEvent.PickPlace(it)) },
@@ -162,10 +178,22 @@ fun MeanwhileScreen(
             modifier = Modifier.weight(1f),
         ) {
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                if (showRecent) item(key = "recent") {
+                    RecentPlaces(
+                        places = state.recentPlaces,
+                        onPick = {
+                            keyboard?.hide()
+                            focus.clearFocus(force = true)
+                            onEvent(UiEvent.PickPlace(it))
+                        },
+                        onClear = { onEvent(UiEvent.ClearRecentPlaces) },
+                    )
+                }
                 state.notice?.let { notice ->
                     item(key = "notice") { NoticeItem(notice, onOpenSettings) }
                 }
@@ -263,13 +291,15 @@ private fun ModeSwitch(mode: ViewMode, onSetMode: (ViewMode) -> Unit) {
  */
 @Composable
 private fun SearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onFocusChange: (Boolean) -> Unit,
     places: List<NamedPlace>,
     onSearch: (String) -> Unit,
     onPick: (NamedPlace) -> Unit,
     onDismissPlaces: () -> Unit,
     onUseLocation: () -> Unit,
 ) {
-    var query by rememberSaveable { mutableStateOf("") }
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = LocalFocusManager.current
     val density = LocalDensity.current
@@ -286,9 +316,10 @@ private fun SearchBar(
     Box {
         OutlinedTextField(
             value = query,
-            onValueChange = { query = it },
+            onValueChange = onQueryChange,
             modifier = Modifier
                 .fillMaxWidth()
+                .onFocusChanged { onFocusChange(it.isFocused) }
                 .onGloballyPositioned { barWidth = with(density) { it.size.width.toDp() } },
             placeholder = { Text("Search for a place") },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
@@ -296,12 +327,12 @@ private fun SearchBar(
                 Row {
                     if (query.isNotEmpty()) {
                         IconButton(onClick = {
-                            query = ""
+                            onQueryChange("")
                             onDismissPlaces()
                         }) { Icon(Icons.Filled.Close, contentDescription = "Clear") }
                     }
                     IconButton(onClick = {
-                        query = ""
+                        onQueryChange("")
                         keyboard?.hide()
                         focus.clearFocus()
                         onUseLocation()
@@ -336,6 +367,34 @@ private fun SearchBar(
                     },
                 )
             }
+        }
+    }
+}
+
+/** The last few places picked from a search, to go back to with one tap. Lives in the list, so it never covers the bar. */
+@Composable
+private fun RecentPlaces(places: List<NamedPlace>, onPick: (NamedPlace) -> Unit, onClear: () -> Unit) {
+    OutlinedCard(Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Recent places", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            TextButton(onClick = onClear) { Text("Clear") }
+        }
+        places.forEach { place ->
+            HorizontalDivider()
+            Text(
+                place.label,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onPick(place) }
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }

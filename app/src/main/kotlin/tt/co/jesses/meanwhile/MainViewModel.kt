@@ -29,6 +29,7 @@ import tt.co.jesses.meanwhile.core.NewsSource
 import tt.co.jesses.meanwhile.core.NewsUnavailableException
 import tt.co.jesses.meanwhile.core.OpenMeteoMarineSource
 import tt.co.jesses.meanwhile.core.PlaceSource
+import tt.co.jesses.meanwhile.core.RecentPlace
 import tt.co.jesses.meanwhile.core.RssNewsSource
 import tt.co.jesses.meanwhile.core.Telemetry
 import tt.co.jesses.meanwhile.core.TelemetryEvent
@@ -97,6 +98,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _effects = Channel<UiEffect>(Channel.BUFFERED)
     val effects: Flow<UiEffect> = _effects.receiveAsFlow()
 
+    init {
+        viewModelScope.launch {
+            settings.recentPlaces.collect { places ->
+                _state.update { state -> state.copy(recentPlaces = places.map { NamedPlace(it.label, it.point) }) }
+            }
+        }
+    }
+
     private var loadJob: Job? = null
     private var origin: LatLon? = null
     private var originLabel: String? = null
@@ -107,6 +116,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             UiEvent.LocationDenied -> _state.update { it.copy(notice = UiNotice.LocationDenied) }
             is UiEvent.Search -> search(event.query)
             is UiEvent.PickPlace -> usePlace(event.place)
+            UiEvent.ClearRecentPlaces -> viewModelScope.launch { settings.clearRecentPlaces() }
             is UiEvent.SetMode -> setMode(event.mode, event.via)
             UiEvent.Refresh -> refresh()
             UiEvent.DismissPlaces -> _state.update { it.copy(searchResults = emptyList()) }
@@ -152,6 +162,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private fun usePlace(place: NamedPlace) {
         _state.update { it.copy(searchResults = emptyList()) }
         telemetry.log(TelemetryEvent.PlaceChosen(PlaceSource.Search))
+        viewModelScope.launch { settings.addRecentPlace(RecentPlace(place.label, place.point.lat, place.point.lon)) }
         loadJob?.cancel()
         loadJob = viewModelScope.launch { loadFor(place.point, place.label, LoadKind.NewPlace) }
     }
