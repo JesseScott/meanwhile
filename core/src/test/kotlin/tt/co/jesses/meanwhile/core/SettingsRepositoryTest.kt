@@ -150,6 +150,28 @@ class SettingsRepositoryTest {
     }
 
     @Test
+    fun twoDifferentPlacesWithTheSameLabelAreBothKept() = runTest {
+        val (repo, store) = repository()
+        repo.addRecentPlace(place("Springfield", lat = 39.80, lon = -89.64))
+        repo.addRecentPlace(place("Lima"))
+        repo.addRecentPlace(place("Springfield", lat = 37.21, lon = -93.29))
+        assertEquals(listOf("Springfield", "Lima", "Springfield"), repo.recentPlaces.first().map { it.label })
+
+        // The first Springfield again, a few metres off: it moves to the front and is not listed twice.
+        repo.addRecentPlace(place("springfield", lat = 39.801, lon = -89.641))
+        val places = repo.recentPlaces.first()
+        assertEquals(listOf("springfield", "Springfield", "Lima"), places.map { it.label })
+        assertEquals(listOf(39.801, 37.21), places.take(2).map { it.lat })
+
+        // A stored list that repeats a place is tidied on reading, and keeps same-named places that are far apart.
+        store.edit {
+            it[stringPreferencesKey("recent_places")] =
+                """[{"label":"Springfield","lat":39.8,"lon":-89.64},{"label":"Springfield","lat":39.8,"lon":-89.64},{"label":"Springfield","lat":37.21,"lon":-93.29}]"""
+        }
+        assertEquals(listOf(39.8, 37.21), repo.recentPlaces.first().map { it.lat })
+    }
+
+    @Test
     fun recentPlacesCanBeCleared() = runTest {
         val (repo, _) = repository()
         repo.addRecentPlace(place("Lima"))
