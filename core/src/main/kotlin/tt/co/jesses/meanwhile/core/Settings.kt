@@ -49,6 +49,15 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
 
     val introSeen: Flow<Boolean> = data.map { it[INTRO_SEEN] ?: false }
 
+    /** The places the user last searched for and picked, newest first. Never the device's own location. */
+    val recentPlaces: Flow<List<RecentPlace>> = data.map { decodeRecentPlaces(it[RECENT_PLACES]) }
+
+    suspend fun addRecentPlace(place: RecentPlace) {
+        store.edit { prefs ->
+            prefs[RECENT_PLACES] = decodeRecentPlaces(prefs[RECENT_PLACES]).withNewest(place).encode()
+        }
+    }
+
     suspend fun setAnalyticsChoice(choice: AnalyticsChoice) {
         store.edit { it[ANALYTICS_CHOICE] = choice.name }
     }
@@ -82,5 +91,6 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val INTRO_SEEN = booleanPreferencesKey("intro_seen")
         val GOOD_LOADS = intPreferencesKey("good_loads")
         val PROMPTS_SHOWN = intPreferencesKey("prompts_shown")
+        val RECENT_PLACES = stringPreferencesKey("recent_places")
     }
 }

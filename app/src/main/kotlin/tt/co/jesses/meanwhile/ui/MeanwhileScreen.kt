@@ -6,6 +6,7 @@ import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.window.PopupProperties
@@ -142,6 +143,7 @@ fun MeanwhileScreen(
             if (state.antipodeIsWater) ModeSwitch(state.mode) { onEvent(UiEvent.SetMode(it)) }
             SearchBar(
                 places = state.searchResults,
+                recent = state.recentPlaces,
                 onSearch = { onEvent(UiEvent.Search(it)) },
                 onPick = { onEvent(UiEvent.PickPlace(it)) },
                 onDismissPlaces = { onEvent(UiEvent.DismissPlaces) },
@@ -264,6 +266,7 @@ private fun ModeSwitch(mode: ViewMode, onSetMode: (ViewMode) -> Unit) {
 @Composable
 private fun SearchBar(
     places: List<NamedPlace>,
+    recent: List<NamedPlace>,
     onSearch: (String) -> Unit,
     onPick: (NamedPlace) -> Unit,
     onDismissPlaces: () -> Unit,
@@ -274,6 +277,10 @@ private fun SearchBar(
     val focus = LocalFocusManager.current
     val density = LocalDensity.current
     var barWidth by remember { mutableStateOf(0.dp) }
+    var focused by remember { mutableStateOf(false) }
+    // Matches for what was typed come first; with nothing typed, a focused field offers the places picked before.
+    val showingRecent = places.isEmpty() && focused && query.isEmpty() && recent.isNotEmpty()
+    val shown = if (places.isNotEmpty()) places else if (showingRecent) recent else emptyList()
     // Closing the popup can hand focus back to the field, so clear it again once the matches are gone.
     var pickedPlace by remember { mutableStateOf(false) }
     LaunchedEffect(places.isEmpty(), pickedPlace) {
@@ -289,7 +296,8 @@ private fun SearchBar(
             onValueChange = { query = it },
             modifier = Modifier
                 .fillMaxWidth()
-                .onGloballyPositioned { barWidth = with(density) { it.size.width.toDp() } },
+                .onGloballyPositioned { barWidth = with(density) { it.size.width.toDp() } }
+                .onFocusChanged { focused = it.isFocused },
             placeholder = { Text("Search for a place") },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             trailingIcon = {
@@ -320,12 +328,15 @@ private fun SearchBar(
         )
         // Not focusable, so showing the matches doesn't steal focus or close the keyboard from under the user.
         DropdownMenu(
-            expanded = places.isNotEmpty(),
-            onDismissRequest = onDismissPlaces,
+            expanded = shown.isNotEmpty(),
+            onDismissRequest = {
+                onDismissPlaces()
+                if (showingRecent) focus.clearFocus()
+            },
             modifier = Modifier.width(barWidth),
             properties = PopupProperties(focusable = false),
         ) {
-            places.forEach { place ->
+            shown.forEach { place ->
                 DropdownMenuItem(
                     text = { Text(place.label, maxLines = 2, overflow = TextOverflow.Ellipsis) },
                     onClick = {

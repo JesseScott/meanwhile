@@ -51,6 +51,8 @@ data class UiState(
     /** The window the articles came from: "24h", or "7d" when the last day was thin. */
     val window: String = "24h",
     val searchResults: List<NamedPlace> = emptyList(),
+    /** Places searched for and picked before, newest first, offered when the search field is focused and empty. */
+    val recentPlaces: List<NamedPlace> = emptyList(),
     /** Set with [Status.Error]. */
     val error: UiError? = null,
     val notice: UiNotice? = null,

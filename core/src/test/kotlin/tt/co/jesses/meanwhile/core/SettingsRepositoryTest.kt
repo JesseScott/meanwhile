@@ -119,6 +119,37 @@ class SettingsRepositoryTest {
     }
 
     @Test
+    fun remembersRecentPlacesNewestFirstAndKeepsOnlyThree() = runTest {
+        val (repo, _) = repository()
+        assertEquals(emptyList(), repo.recentPlaces.first())
+
+        listOf("Oslo", "Lima", "Hanoi", "Cairo").forEachIndexed { i, name ->
+            repo.addRecentPlace(RecentPlace(name, LatLon(i.toDouble(), i.toDouble())))
+        }
+        assertEquals(listOf("Cairo", "Hanoi", "Lima"), repo.recentPlaces.first().map { it.label })
+
+        // Picking one again moves it to the front instead of adding a copy.
+        repo.addRecentPlace(RecentPlace("Lima", LatLon(2.0, 2.0)))
+        assertEquals(listOf("Lima", "Cairo", "Hanoi"), repo.recentPlaces.first().map { it.label })
+    }
+
+    @Test
+    fun recentPlacesSurviveTheAppRestartingAndDamageReadsAsEmpty() = runTest {
+        val file = File.createTempFile("settings", ".preferences_pb").also { it.delete() }
+        val firstProcess = CoroutineScope(Dispatchers.IO + Job())
+        SettingsRepository(newStore(firstProcess, file)).addRecentPlace(RecentPlace("Oslo, Norway", LatLon(59.9, 10.7)))
+        firstProcess.cancel()
+        firstProcess.coroutineContext[Job]!!.join()
+
+        val reopened = SettingsRepository(newStore(backgroundScope, file))
+        assertEquals(listOf(RecentPlace("Oslo, Norway", LatLon(59.9, 10.7))), reopened.recentPlaces.first())
+
+        val (repo, store) = repository()
+        store.edit { it[stringPreferencesKey("recent_places")] = "not a place" }
+        assertEquals(emptyList(), repo.recentPlaces.first())
+    }
+
+    @Test
     fun theAskRuleItselfHasNoSurprisingEdges() {
         val ask = { choice: AnalyticsChoice, loads: Int, prompts: Int, can: Boolean -> AnalyticsPrompt.shouldAsk(choice, loads, prompts, can) }
         assertTrue(ask(AnalyticsChoice.Unset, 3, 0, true))

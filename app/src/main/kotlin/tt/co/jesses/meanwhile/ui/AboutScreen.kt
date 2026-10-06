@@ -117,8 +117,9 @@ fun AboutScreen(onBack: () -> Unit) {
                         "include your location, your antipode or your searches. Turning the switch off stops them and resets the ID.",
                 )
                 Bullet(
-                    "Stored on your phone: headlines for up to three days (so something shows quickly), whether you have seen " +
-                        "the welcome screen, your choice about reports, and a count of how often the app has asked.",
+                    "Stored on your phone: headlines for up to three days (so something shows quickly), the last three places " +
+                        "you searched for and picked (so you can choose them again), whether you have seen the welcome screen, " +
+                        "your choice about reports, and a count of how often the app has asked. None of it leaves your phone.",
                 )
                 Bullet(
                     "No ads. Tapping a headline opens the publisher's own website in your browser, which has its own privacy policy.",

@@ -29,6 +29,7 @@ import tt.co.jesses.meanwhile.core.NewsSource
 import tt.co.jesses.meanwhile.core.NewsUnavailableException
 import tt.co.jesses.meanwhile.core.OpenMeteoMarineSource
 import tt.co.jesses.meanwhile.core.PlaceSource
+import tt.co.jesses.meanwhile.core.RecentPlace
 import tt.co.jesses.meanwhile.core.RssNewsSource
 import tt.co.jesses.meanwhile.core.Telemetry
 import tt.co.jesses.meanwhile.core.TelemetryEvent
@@ -97,6 +98,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _effects = Channel<UiEffect>(Channel.BUFFERED)
     val effects: Flow<UiEffect> = _effects.receiveAsFlow()
 
+    init {
+        viewModelScope.launch {
+            settings.recentPlaces.collect { recent ->
+                _state.update { it.copy(recentPlaces = recent.map { place -> NamedPlace(place.label, place.point) }) }
+            }
+        }
+    }
+
     private var loadJob: Job? = null
     private var origin: LatLon? = null
     private var originLabel: String? = null
@@ -152,6 +161,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private fun usePlace(place: NamedPlace) {
         _state.update { it.copy(searchResults = emptyList()) }
         telemetry.log(TelemetryEvent.PlaceChosen(PlaceSource.Search))
+        // Only a place the user searched for and picked is remembered, never the device's own location.
+        viewModelScope.launch { settings.addRecentPlace(RecentPlace(place.label, place.point)) }
         loadJob?.cancel()
         loadJob = viewModelScope.launch { loadFor(place.point, place.label, LoadKind.NewPlace) }
     }
