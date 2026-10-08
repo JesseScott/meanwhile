@@ -36,9 +36,14 @@ JDK 17. OkHttp is pinned to 5.1.0 in `:app` (newer versions need a newer compile
 
 ## Privacy
 Usage and crash reports (Firebase) are opt-in and off by default. Only events from the fixed vocabulary in
-`Telemetry.kt` can be sent, and they never include the user's location, antipode, country, searches or reading.
-Changing this means updating together: the About screen text, the hosted privacy page, the Play Data safety form,
-and `docs/play-store/tester-message.txt`. New telemetry events or parameters also need `TelemetryTest` updated.
+`Telemetry.kt` can be sent. The one fact about a place is `country` on `load_finished` and `load_failed`: the ISO
+code of the country whose headlines were loaded, from the fixed `KNOWN_COUNTRIES` list (`unknown` for anything else,
+`none` on the open sea), for device-located and searched loads alike. Events never include the user's exact location,
+the antipode's coordinates, a place name, a search or what was read, and `article_opened` never carries a country.
+Changing this means updating together: the About screen text, the opt-in prompt, the README, the hosted privacy page,
+the Play Data safety form, and `docs/play-store/tester-message.txt`. New telemetry events or parameters also need
+`TelemetryTest` updated. If reports start to carry something new, raise `AnalyticsPrompt.CONSENT_VERSION` so that
+people who answered under the old wording are asked again; nothing is sent until they answer.
 
 ## News sources
 - GDELT's DOC API is unreliable: stricter than its documented limit, blocks last a minute or more, errors can arrive

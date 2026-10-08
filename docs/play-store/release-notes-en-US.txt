@@ -1,8 +1,8 @@
-Meanwhile 0.1.0 (build 8)
+Meanwhile 0.1.0 (build 9)
 
 Thanks for testing!
 
-New: backup local news feeds for the places the west coast, Europe and Asia land on (Madagascar, New Zealand, Australia, Peru, Japan and more), a quicker "headlines are busy" message, optional anonymous usage and crash reports (off by default), and a more reliable location fix.
+New: your last three searched places appear under the search bar. If you share anonymous usage reports, they now include the country of the headlines you load (never your exact location or what you searched for). Because that is new, the app asks again, and sends nothing until you answer.
 
 Try: location, search, ocean and land, pull to refresh, dark mode.
 

@@ -113,8 +113,10 @@ fun AboutScreen(onBack: () -> Unit) {
                 Bullet(
                     "Usage and crash reports are off unless you turn them on below. If you do, Meanwhile uses Firebase, a Google " +
                         "service, to see how the app is used and to find crashes: screens opened, whether a load worked and how long it " +
-                        "took, kinds of errors, your phone's model, Android and app version, and a random installation ID. They never " +
-                        "include your location, your antipode or your searches. Turning the switch off stops them and resets the ID.",
+                        "took, the country of the headlines you load, kinds of errors, your phone's model, Android and app version, and a " +
+                        "random installation ID. They never include your exact location or the place you search for. That country " +
+                        "is usually on the far side of the world from you, so it hints at roughly where you are. Turning the " +
+                        "switch off stops them and resets the ID.",
                 )
                 Bullet(
                     "Stored on your phone: headlines for up to three days (so something shows quickly), whether you have seen " +

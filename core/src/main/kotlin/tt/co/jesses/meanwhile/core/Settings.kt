@@ -27,6 +27,13 @@ object AnalyticsPrompt {
     /** Stop asking after this many prompts that got no answer. */
     const val MAX_PROMPTS = 2
 
+    /**
+     * Which wording of the promise the user is answering. Raise it when reports start to carry something they did
+     * not before: a choice made, and the prompts shown, under an older number no longer count, so the app asks again.
+     * 2: reports include the country of the headlines loaded.
+     */
+    const val CONSENT_VERSION = 2
+
     fun shouldAsk(choice: AnalyticsChoice, goodLoads: Int, promptsShown: Int, canCollect: Boolean): Boolean =
         canCollect && choice == AnalyticsChoice.Unset && goodLoads >= MIN_GOOD_LOADS && promptsShown < MAX_PROMPTS
 }
@@ -36,6 +43,9 @@ object AnalyticsPrompt {
  *
  * The choice is stored by name, and anything unrecognised reads as [AnalyticsChoice.Unset], so a renamed or removed
  * value can't crash the app or silently turn collection on. A damaged settings file reads as defaults.
+ *
+ * The choice and the count of prompts belong to the [AnalyticsPrompt.CONSENT_VERSION] they were made under. Under an
+ * older one they read as unset and zero, so collection is off until the user answers the new question.
  */
 class SettingsRepository(private val store: DataStore<Preferences>) {
 
@@ -43,9 +53,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         if (error is IOException) emit(emptyPreferences()) else throw error
     }
 
-    val analyticsChoice: Flow<AnalyticsChoice> = data.map { prefs ->
-        AnalyticsChoice.entries.firstOrNull { it.name == prefs[ANALYTICS_CHOICE] } ?: AnalyticsChoice.Unset
-    }
+    val analyticsChoice: Flow<AnalyticsChoice> = data.map { it.choice() }
 
     val introSeen: Flow<Boolean> = data.map { it[INTRO_SEEN] ?: false }
 
@@ -53,7 +61,10 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
     val recentPlaces: Flow<List<RecentPlace>> = data.map { RecentPlaces.decode(it[RECENT_PLACES]) }
 
     suspend fun setAnalyticsChoice(choice: AnalyticsChoice) {
-        store.edit { it[ANALYTICS_CHOICE] = choice.name }
+        store.edit {
+            it[ANALYTICS_CHOICE] = choice.name
+            it[CONSENT_VERSION] = AnalyticsPrompt.CONSENT_VERSION
+        }
     }
 
     suspend fun setIntroSeen() {
@@ -79,20 +90,35 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
     }
 
     suspend fun recordPromptShown() {
-        store.edit { it[PROMPTS_SHOWN] = (it[PROMPTS_SHOWN] ?: 0) + 1 }
+        store.edit {
+            val shown = it.promptsShown()
+            // The first prompt under a new consent version starts that version's record: the old answer goes.
+            if (!it.consentIsCurrent()) it.remove(ANALYTICS_CHOICE)
+            it[CONSENT_VERSION] = AnalyticsPrompt.CONSENT_VERSION
+            it[PROMPTS_SHOWN] = shown + 1
+        }
     }
 
     suspend fun shouldAskAboutAnalytics(canCollect: Boolean): Boolean {
         val prefs = data.first()
-        val choice = AnalyticsChoice.entries.firstOrNull { it.name == prefs[ANALYTICS_CHOICE] } ?: AnalyticsChoice.Unset
-        return AnalyticsPrompt.shouldAsk(choice, prefs[GOOD_LOADS] ?: 0, prefs[PROMPTS_SHOWN] ?: 0, canCollect)
+        return AnalyticsPrompt.shouldAsk(prefs.choice(), prefs[GOOD_LOADS] ?: 0, prefs.promptsShown(), canCollect)
     }
+
+    /** Builds from before consent had a version stored none, which counts as 1. */
+    private fun Preferences.consentIsCurrent() = (this[CONSENT_VERSION] ?: 1) == AnalyticsPrompt.CONSENT_VERSION
+
+    private fun Preferences.choice(): AnalyticsChoice =
+        if (consentIsCurrent()) AnalyticsChoice.entries.firstOrNull { it.name == this[ANALYTICS_CHOICE] } ?: AnalyticsChoice.Unset
+        else AnalyticsChoice.Unset
+
+    private fun Preferences.promptsShown(): Int = if (consentIsCurrent()) this[PROMPTS_SHOWN] ?: 0 else 0
 
     private companion object {
         val ANALYTICS_CHOICE = stringPreferencesKey("analytics_choice")
         val INTRO_SEEN = booleanPreferencesKey("intro_seen")
         val GOOD_LOADS = intPreferencesKey("good_loads")
         val PROMPTS_SHOWN = intPreferencesKey("prompts_shown")
+        val CONSENT_VERSION = intPreferencesKey("consent_version")
         val RECENT_PLACES = stringPreferencesKey("recent_places")
     }
 }

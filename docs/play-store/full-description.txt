@@ -22,7 +22,7 @@ PRIVATE BY DEFAULT
 - Approximate (coarse) location only, used to find the point opposite you. It is not stored, and there is no account.
 - Search for a place instead of sharing your location if you prefer.
 - No ads.
-- Usage and crash reports are off unless you turn them on, and they never include your location or what you read.
+- Usage and crash reports are off unless you turn them on, and they never include your exact location or what you read.
 Details are in the app's About screen and the privacy policy.
 
 A HOBBY PROJECT
