@@ -95,7 +95,7 @@ fun MeanwhileApp(viewModel: MainViewModel) {
                 }
                 UiEffect.AskToShareUsage -> {
                     val answer = snackbar.showSnackbar(
-                        message = "Help improve Meanwhile? Share anonymous usage and crash reports, including the country of the headlines you load.",
+                        message = "Help improve Meanwhile? You can share anonymous usage and crash reports.",
                         actionLabel = "Turn on",
                         withDismissAction = true,
                         duration = SnackbarDuration.Long,
