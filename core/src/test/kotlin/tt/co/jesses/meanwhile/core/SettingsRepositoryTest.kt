@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -116,6 +117,53 @@ class SettingsRepositoryTest {
         val (repo, _) = repository()
         repeat(AnalyticsPrompt.MIN_GOOD_LOADS) { repo.recordGoodLoad() }
         assertFalse(repo.shouldAskAboutAnalytics(canCollect = false))
+    }
+
+    /** The settings a build from before consent versions would have left behind: an answer, and both prompts used. */
+    private suspend fun DataStore<Preferences>.writeOldConsent(choice: AnalyticsChoice?) = edit {
+        if (choice != null) it[stringPreferencesKey("analytics_choice")] = choice.name
+        it[intPreferencesKey("good_loads")] = 40
+        it[intPreferencesKey("prompts_shown")] = AnalyticsPrompt.MAX_PROMPTS
+    }
+
+    @Test
+    fun anAnswerGivenUnderTheOldWordingNoLongerCountsAndTheAppAsksAgain() = runTest {
+        for (old in listOf(AnalyticsChoice.Accepted, AnalyticsChoice.Rejected, null)) {
+            val (repo, store) = repository()
+            store.writeOldConsent(old)
+
+            // Off until they answer the new question, whatever they said before.
+            assertEquals(AnalyticsChoice.Unset, repo.analyticsChoice.first(), "was $old")
+            assertTrue(repo.shouldAskAboutAnalytics(canCollect = true), "was $old")
+        }
+    }
+
+    @Test
+    fun theReAskFollowsTheSameLimitsAndHappensOnlyOnce() = runTest {
+        val (repo, store) = repository()
+        store.writeOldConsent(AnalyticsChoice.Accepted)
+
+        repo.recordPromptShown()
+        assertEquals(AnalyticsChoice.Unset, repo.analyticsChoice.first(), "an unanswered prompt does not bring the old yes back")
+        assertTrue(repo.shouldAskAboutAnalytics(canCollect = true), "asked once, may ask once more")
+        repo.recordPromptShown()
+        assertFalse(repo.shouldAskAboutAnalytics(canCollect = true), "asked twice, stop")
+        assertEquals(AnalyticsChoice.Unset, repo.analyticsChoice.first())
+    }
+
+    @Test
+    fun anAnswerToTheNewQuestionSticks() = runTest {
+        val file = File.createTempFile("settings", ".preferences_pb").also { it.delete() }
+        val firstProcess = CoroutineScope(Dispatchers.IO + Job())
+        val store = newStore(firstProcess, file)
+        store.writeOldConsent(AnalyticsChoice.Rejected)
+        SettingsRepository(store).setAnalyticsChoice(AnalyticsChoice.Accepted)
+        firstProcess.cancel()
+        firstProcess.coroutineContext[Job]!!.join()
+
+        val reopened = SettingsRepository(newStore(backgroundScope, file))
+        assertEquals(AnalyticsChoice.Accepted, reopened.analyticsChoice.first())
+        assertFalse(reopened.shouldAskAboutAnalytics(canCollect = true))
     }
 
     @Test
