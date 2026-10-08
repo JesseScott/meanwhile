@@ -146,7 +146,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         loadJob = viewModelScope.launch {
             if (!location.isEnabled()) {
                 _state.update { it.copy(status = Status.Error, error = UiError.LocationOff) }
-                telemetry.log(TelemetryEvent.LoadFailed(UiError.LocationOff.name, LoadKindName.NewPlace))
+                telemetry.log(TelemetryEvent.LoadFailed(UiError.LocationOff.name, LoadKindName.NewPlace, country = null))
                 return@launch
             }
             val here = location.current()
@@ -246,12 +246,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         // Same place again, so the country is already known; skip looking it up (and the flicker that goes with it).
         val known = if (kind == LoadKind.NewPlace) null else before.country
 
+        // The country whose headlines are being fetched, for the usage report. It stays null on the open sea, so a
+        // report never names the nearest land unless the user asked for its headlines.
+        var newsCountry: String? = null
         try {
             val empty = mutableSetOf<String>()
             repeat(MAX_COUNTRY_ATTEMPTS) { attempt ->
                 val country = (if (attempt == 0) known else null) ?: resolver.resolve(target, empty)
                 if (country == null) {
-                    fail(kind, UiError.NoLandNearby)
+                    fail(kind, UiError.NoLandNearby, newsCountry)
                     return
                 }
                 val water = country.distanceKm > 0
@@ -270,7 +273,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     telemetry.log(
                         TelemetryEvent.LoadFinished(
                             water = true, showingOcean = true, kind = kind.telemetryName(), articles = 0,
-                            durationMs = (System.nanoTime() - loadStart) / 1_000_000, sources = emptySet(),
+                            durationMs = (System.nanoTime() - loadStart) / 1_000_000, sources = emptySet(), country = null,
                         ),
                     )
                     noteGoodLoad()
@@ -278,6 +281,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     return
                 }
 
+                newsCountry = country.iso
                 _state.update { it.copy(country = country, progress = Progress.FetchingHeadlines(country.name)) }
 
                 // Results show as each source answers; cleaning happens per snapshot, so cached results and newly
@@ -301,6 +305,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         TelemetryEvent.LoadFinished(
                             water = water, showingOcean = false, kind = kind.telemetryName(), articles = articles.size,
                             durationMs = (System.nanoTime() - loadStart) / 1_000_000, sources = articles.map { it.via }.toSet(),
+                            country = country.iso,
                         ),
                     )
                     noteGoodLoad()
@@ -309,7 +314,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 empty += country.iso
                 _state.update { it.copy(progress = Progress.TryingNext(country.name)) }
             }
-            fail(kind, UiError.NoHeadlines)
+            fail(kind, UiError.NoHeadlines, newsCountry)
         } catch (e: CancellationException) {
             throw e
         } catch (e: NewsUnavailableException) {
@@ -321,12 +326,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     NewsFailure.Network -> UiError.Offline
                     NewsFailure.Unknown -> UiError.Unknown
                 },
+                newsCountry,
             )
         } catch (e: Exception) {
             AppLog.e(TAG, "load failed after ${(System.nanoTime() - loadStart) / 1_000_000} ms", e)
             // An unexpected failure: worth a crash report, which carries only the type and stack frames, not the message.
             telemetry.recordError(e, "load")
-            fail(kind, if (e is IOException) UiError.Offline else UiError.Unknown)
+            fail(kind, if (e is IOException) UiError.Offline else UiError.Unknown, newsCountry)
         }
     }
 
@@ -349,8 +355,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** A failed refresh over content that is still there keeps the content; anything else becomes an error screen. */
-    private fun fail(kind: LoadKind, error: UiError) {
-        telemetry.log(TelemetryEvent.LoadFailed(error.name, kind.telemetryName()))
+    private fun fail(kind: LoadKind, error: UiError, country: String?) {
+        telemetry.log(TelemetryEvent.LoadFailed(error.name, kind.telemetryName(), country))
         _state.update {
             if (kind == LoadKind.Refresh && it.status == Status.Ready) {
                 it.copy(isRefreshing = false, notice = UiNotice.RefreshFailed)
