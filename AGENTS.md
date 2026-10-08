@@ -57,4 +57,5 @@ people who answered under the old wording are asked again; nothing is sent until
 ## Testing notes
 - Debug builds log through `AppLog`; release builds log nothing. Risky changes are worth trying in a signed release
   build too (R8 and signing can change behaviour).
-- Work is tracked in GitHub issues.
+- Work is tracked in GitHub issues. Label each pull request `enhancement` or `bug` (or `skip-changelog`); the release
+  notes are grouped by those labels (see `docs/RELEASING.md`).

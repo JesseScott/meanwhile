@@ -25,6 +25,13 @@ GitHub release; the signed bundle is built locally and attached.
 
 The upload key never leaves your machine, which is why the bundle is not built in CI.
 
+## Release notes
+
+The GitHub release lists the merged pull requests since the last release, grouped by label (`.github/release.yml`):
+**New** (`enhancement`), **Fixes** (`bug`) and **Everything else** (any other label, or none). Label a pull request
+that only changes the version `release` so it is left out (one that also changes the app keeps its `enhancement` or
+`bug`), and anything else that should not appear in the notes, such as build tooling, `skip-changelog`.
+
 ## One-time repository settings
 
 See the notes in the pull request that added this; in short: require a pull request and the **Build and test** and
