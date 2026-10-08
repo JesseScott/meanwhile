@@ -19,7 +19,7 @@ WHAT'S ROUGH, SO YOU KNOW
 
 PRIVACY
 Approximate location only, used to find the point opposite you and not stored. The last three places you pick from a search are remembered on your phone only (there is a Clear button). No accounts, no ads.
-Usage and crash reports are off unless you turn them on. After you've used the app a few times it will ask once or twice with a small message at the bottom ("Help improve Meanwhile?"): tap Turn on, ignore it, or use the switch in About whenever you like. If you turn it on, it sends anonymous things like which screens you open, whether a load worked, and crash reports. It never includes your location, the place you looked up or what you read. It would help me a lot if you turn it on, but it's completely up to you.
+Usage and crash reports are off unless you turn them on. After you've used the app a few times it will ask once or twice with a small message at the bottom ("Help improve Meanwhile?"): tap Turn on, ignore it, or use the switch in About whenever you like. If you turn it on, it sends anonymous things like which screens you open, whether a load worked, the country of the headlines you loaded, and crash reports. It never includes your exact location, the place you searched for or what you read. This is new in build 9, so the app asks again even if you answered before, and sends nothing until you do. It would help me a lot if you turn it on, but it's completely up to you.
 Full details: https://www.jesses.co.tt/privacy-meanwhile.html
 
 TELL ME WHAT YOU THINK
