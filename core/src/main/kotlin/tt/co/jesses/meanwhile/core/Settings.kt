@@ -60,6 +60,13 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
     /** The last few places the user picked from a search, newest first. Kept on the phone only. */
     val recentPlaces: Flow<List<RecentPlace>> = data.map { RecentPlaces.decode(it[RECENT_PLACES]) }
 
+    /** Whether the country's flag is washed in behind the header. On unless the user turns it off. */
+    val flagWash: Flow<Boolean> = data.map { it[FLAG_WASH] ?: true }
+
+    suspend fun setFlagWash(on: Boolean) {
+        store.edit { it[FLAG_WASH] = on }
+    }
+
     suspend fun setAnalyticsChoice(choice: AnalyticsChoice) {
         store.edit {
             it[ANALYTICS_CHOICE] = choice.name
@@ -120,5 +127,6 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val PROMPTS_SHOWN = intPreferencesKey("prompts_shown")
         val CONSENT_VERSION = intPreferencesKey("consent_version")
         val RECENT_PLACES = stringPreferencesKey("recent_places")
+        val FLAG_WASH = booleanPreferencesKey("flag_wash")
     }
 }

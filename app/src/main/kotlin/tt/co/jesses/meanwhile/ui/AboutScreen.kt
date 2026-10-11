@@ -81,6 +81,16 @@ fun AboutScreen(onBack: () -> Unit) {
                 LinkButton("jesses.co.tt", SITE_URL)
             }
 
+            Section("Appearance") {
+                val flagWash by settings.flagWash.collectAsStateWithLifecycle(initialValue = true)
+                SwitchRow(
+                    title = "Flag behind the header",
+                    detail = "A faint wash of the country's flag colours",
+                    checked = flagWash,
+                    onCheckedChange = { on -> scope.launch { settings.setFlagWash(on) } },
+                )
+            }
+
             Section("Where the data comes from") {
                 Body(
                     "Headlines: the GDELT Project (gdeltproject.org), a free, open database of world news, plus a few public " +
@@ -120,8 +130,9 @@ fun AboutScreen(onBack: () -> Unit) {
                 )
                 Bullet(
                     "Stored on your phone: headlines for up to three days (so something shows quickly), whether you have seen " +
-                        "the welcome screen, your choice about reports, a count of how often the app has asked, and the last three " +
-                        "places you picked from a search (the Recent places list has a Clear button).",
+                        "the welcome screen, your choice about reports, a count of how often the app has asked, whether the flag " +
+                        "behind the header is on, and the last three places you picked from a search (the Recent places list " +
+                        "has a Clear button).",
                 )
                 Bullet(
                     "No ads. Tapping a headline opens the publisher's own website in your browser, which has its own privacy policy.",
@@ -129,23 +140,15 @@ fun AboutScreen(onBack: () -> Unit) {
 
                 // The saved choice is the only source of truth; the application turns collection on and off from it.
                 val choice by settings.analyticsChoice.collectAsStateWithLifecycle(initialValue = AnalyticsChoice.Unset)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Share usage and crash data", style = MaterialTheme.typography.titleMedium)
-                        Text("Off unless you turn it on", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Switch(
-                        checked = choice == AnalyticsChoice.Accepted,
-                        // Turning it off is an explicit no, so the app won't ask again.
-                        onCheckedChange = { on ->
-                            scope.launch { settings.setAnalyticsChoice(if (on) AnalyticsChoice.Accepted else AnalyticsChoice.Rejected) }
-                        },
-                    )
-                }
+                SwitchRow(
+                    title = "Share usage and crash data",
+                    detail = "Off unless you turn it on",
+                    checked = choice == AnalyticsChoice.Accepted,
+                    // Turning it off is an explicit no, so the app won't ask again.
+                    onCheckedChange = { on ->
+                        scope.launch { settings.setAnalyticsChoice(if (on) AnalyticsChoice.Accepted else AnalyticsChoice.Rejected) }
+                    },
+                )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     LinkButton("Privacy policy", PRIVACY_URL)
                     LinkButton("How Firebase handles data", "https://firebase.google.com/support/privacy")
@@ -185,6 +188,21 @@ private fun Section(title: String, content: @Composable () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(title, style = MaterialTheme.typography.titleLarge)
         content()
+    }
+}
+
+@Composable
+private fun SwitchRow(title: String, detail: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 

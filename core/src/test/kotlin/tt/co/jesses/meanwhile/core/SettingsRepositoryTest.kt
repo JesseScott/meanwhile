@@ -48,6 +48,18 @@ class SettingsRepositoryTest {
     }
 
     @Test
+    fun theFlagWashIsOnUntilTurnedOff() = runTest {
+        val (repo, _) = repository()
+        assertTrue(repo.flagWash.first())
+
+        repo.setFlagWash(false)
+        assertFalse(repo.flagWash.first())
+
+        repo.setFlagWash(true)
+        assertTrue(repo.flagWash.first())
+    }
+
+    @Test
     fun theChoiceSurvivesTheAppRestarting() = runTest {
         val file = File.createTempFile("settings", ".preferences_pb").also { it.delete() }
         // The first process: write the choice, then end it (DataStore allows only one live instance per file).
