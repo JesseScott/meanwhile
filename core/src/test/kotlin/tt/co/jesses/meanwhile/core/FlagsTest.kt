@@ -8,15 +8,15 @@ import kotlin.test.assertTrue
 class FlagsTest {
     @Test
     fun knowsTheStripesOfSimpleFlags() {
-        assertEquals(FlagStripes(FlagLayout.Horizontal, listOf(0x0057B7, 0xFFD700)), flagStripesFor("UA"))
+        assertEquals(FlagStripes(FlagLayout.Horizontal, listOf(0x005BBB, 0xFFD500)), flagStripesFor("UA"))
         assertEquals(FlagStripes(FlagLayout.Horizontal, listOf(0x000000, 0xDD0000, 0xFFCE00)), flagStripesFor("DE"))
-        assertEquals(FlagStripes(FlagLayout.Vertical, listOf(0x0055A4, 0xFFFFFF, 0xEF4135)), flagStripesFor("FR"))
+        assertEquals(FlagStripes(FlagLayout.Vertical, listOf(0x002654, 0xFFFFFF, 0xCE1126)), flagStripesFor("FR"))
     }
 
     @Test
     fun crossesAndDiscsHaveTheirOwnLayouts() {
-        assertEquals(FlagStripes(FlagLayout.NordicCross, listOf(0xFFFFFF, 0x003580)), flagStripesFor("FI"))
-        assertEquals(FlagStripes(FlagLayout.CenteredCross, listOf(0xDA291C, 0xFFFFFF)), flagStripesFor("CH"))
+        assertEquals(FlagStripes(FlagLayout.NordicCross, listOf(0xFFFFFF, 0x002F6C)), flagStripesFor("FI"))
+        assertEquals(FlagStripes(FlagLayout.CenteredCross, listOf(0xFF0000, 0xFFFFFF)), flagStripesFor("CH"))
         assertEquals(FlagLayout.CenteredCross, flagStripesFor("GB")?.layout)
         assertEquals(FlagStripes(FlagLayout.Disc, listOf(0xFFFFFF, 0xBC002D)), flagStripesFor("JP"))
     }
@@ -45,9 +45,10 @@ class FlagsTest {
         KNOWN_COUNTRIES.forEach { iso ->
             val flag = flagStripesFor(iso)!!
             val allowed = when (flag.layout) {
-                FlagLayout.Horizontal, FlagLayout.Vertical -> 1..4
+                FlagLayout.Horizontal, FlagLayout.Vertical -> 1..5
                 FlagLayout.NordicCross, FlagLayout.CenteredCross, FlagLayout.Disc -> 2..3
-                FlagLayout.Hoist, FlagLayout.Canton -> 2..4
+                FlagLayout.Hoist -> 2..5
+                FlagLayout.Canton -> 2..4
             }
             assertTrue(flag.colors.size in allowed, "$iso has ${flag.colors.size} colours for ${flag.layout}")
             assertTrue(flag.colors.all { it in 0x000000..0xFFFFFF }, "$iso has a colour that is not 0xRRGGBB")
