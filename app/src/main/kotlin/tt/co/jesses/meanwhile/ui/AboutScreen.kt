@@ -37,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import tt.co.jesses.meanwhile.MeanwhileApplication
 import tt.co.jesses.meanwhile.core.AnalyticsChoice
+import tt.co.jesses.meanwhile.core.LocationAccess
 import tt.co.jesses.meanwhile.core.TelemetryEvent
 
 private const val KOFI_URL = "https://ko-fi.com/jessescott"
@@ -44,7 +45,7 @@ private const val SITE_URL = "https://jesses.co.tt"
 private const val PRIVACY_URL = "https://www.jesses.co.tt/privacy-meanwhile.html"
 
 @Composable
-fun AboutScreen(onBack: () -> Unit) {
+fun AboutScreen(locationAccess: LocationAccess, onTurnOnLocation: () -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
     val telemetry = LocalTelemetry.current
     val settings = remember { (context.applicationContext as MeanwhileApplication).settings }
@@ -79,6 +80,24 @@ fun AboutScreen(onBack: () -> Unit) {
                 )
                 Body("A hobby project by Jesse Scott. It is free, has no ads, and isn't a business.")
                 LinkButton("jesses.co.tt", SITE_URL)
+            }
+
+            Section("Location") {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Use my location", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            locationAccess.detail(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    locationAccess.action()?.let { label -> OutlinedButton(onClick = onTurnOnLocation) { Text(label) } }
+                }
             }
 
             Section("Appearance") {
@@ -130,7 +149,7 @@ fun AboutScreen(onBack: () -> Unit) {
                 )
                 Bullet(
                     "Stored on your phone: headlines for up to three days (so something shows quickly), whether you have seen " +
-                        "the welcome screen, your choice about reports, a count of how often the app has asked, whether the flag " +
+                        "the welcome screen, whether you have turned down the location prompt, your choice about reports, a count of how often the app has asked, whether the flag " +
                         "behind the header is on, and the last three places you picked from a search (the Recent places list " +
                         "has a Clear button).",
                 )
