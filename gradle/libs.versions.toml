@@ -1,5 +1,5 @@
 [versions]
-agp = "8.11.2"
+agp = "9.4.1"
 kotlin = "2.3.0"
 compose-bom = "2025.12.01"
 androidx-activity = "1.12.2"
