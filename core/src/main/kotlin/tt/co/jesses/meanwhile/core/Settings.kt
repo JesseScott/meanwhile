@@ -63,6 +63,17 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
     /** Whether the country's flag is washed in behind the header. On unless the user turns it off. */
     val flagWash: Flow<Boolean> = data.map { it[FLAG_WASH] ?: true }
 
+    /**
+     * Whether the location prompt has been refused since location was last on. Only [LocationAccess] gives it a
+     * meaning. A grant clears it, because Android starts counting refusals again once a grant ends (an "Only this
+     * time" grant running out, say).
+     */
+    val locationRefused: Flow<Boolean> = data.map { it[LOCATION_REFUSED] ?: false }
+
+    suspend fun setLocationRefused(refused: Boolean) {
+        store.edit { it[LOCATION_REFUSED] = refused }
+    }
+
     suspend fun setFlagWash(on: Boolean) {
         store.edit { it[FLAG_WASH] = on }
     }
@@ -128,5 +139,6 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val CONSENT_VERSION = intPreferencesKey("consent_version")
         val RECENT_PLACES = stringPreferencesKey("recent_places")
         val FLAG_WASH = booleanPreferencesKey("flag_wash")
+        val LOCATION_REFUSED = booleanPreferencesKey("location_refused")
     }
 }
