@@ -31,11 +31,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.oss.licenses.v2.OssLicensesMenuActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import tt.co.jesses.meanwhile.MeanwhileApplication
+import tt.co.jesses.meanwhile.R
 import tt.co.jesses.meanwhile.core.AnalyticsChoice
 import tt.co.jesses.meanwhile.core.LocationAccess
 import tt.co.jesses.meanwhile.core.TelemetryEvent
@@ -58,9 +60,9 @@ fun AboutScreen(locationAccess: LocationAccess, onTurnOnLocation: () -> Unit, on
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.about_back))
             }
-            Text("About", style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(R.string.about_title), style = MaterialTheme.typography.headlineSmall)
         }
         HorizontalDivider()
 
@@ -71,25 +73,21 @@ fun AboutScreen(locationAccess: LocationAccess, onTurnOnLocation: () -> Unit, on
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            Section("Meanwhile") {
-                Body("Version ${versionName(context)}")
-                Body(
-                    "Meanwhile finds the point exactly opposite you on Earth, your antipode, and shows what is " +
-                        "happening there: headlines from that country, or from the nearest land if the point is open water. " +
-                        "When it is open water you can also look at the sea itself.",
-                )
-                Body("A hobby project by Jesse Scott. It is free, has no ads, and isn't a business.")
-                LinkButton("jesses.co.tt", SITE_URL)
+            Section(stringResource(R.string.app_name)) {
+                Body(stringResource(R.string.about_version, versionName(context) ?: stringResource(R.string.about_version_unknown)))
+                Body(stringResource(R.string.about_what_it_does))
+                Body(stringResource(R.string.about_hobby))
+                LinkButton(stringResource(R.string.about_link_site), SITE_URL)
             }
 
-            Section("Location") {
+            Section(stringResource(R.string.about_location_title)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("Use my location", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.about_use_my_location), style = MaterialTheme.typography.titleMedium)
                         Text(
                             locationAccess.detail(),
                             style = MaterialTheme.typography.bodySmall,
@@ -100,68 +98,39 @@ fun AboutScreen(locationAccess: LocationAccess, onTurnOnLocation: () -> Unit, on
                 }
             }
 
-            Section("Appearance") {
+            Section(stringResource(R.string.about_appearance_title)) {
                 val flagWash by settings.flagWash.collectAsStateWithLifecycle(initialValue = true)
                 SwitchRow(
-                    title = "Flag behind the header",
-                    detail = "A faint wash of the country's flag colours",
+                    title = stringResource(R.string.about_flag_wash_title),
+                    detail = stringResource(R.string.about_flag_wash_detail),
                     checked = flagWash,
                     onCheckedChange = { on -> scope.launch { settings.setFlagWash(on) } },
                 )
             }
 
-            Section("Where the data comes from") {
-                Body(
-                    "Headlines: the GDELT Project (gdeltproject.org), a free, open database of world news, plus a few public " +
-                        "news feeds from local outlets. Meanwhile shows article titles only and links to the publishers' own sites. " +
-                        "Titles appear as published, in their original language, and GDELT can occasionally file an outlet under the wrong country.",
-                )
-                LinkButton("GDELT Project", "https://www.gdeltproject.org")
-                Body(
-                    "Sea conditions: the Open-Meteo.com Marine API, with data from DWD and other national weather services, " +
-                        "used under the CC BY 4.0 license for non-commercial purposes. Not for navigation.",
-                )
+            Section(stringResource(R.string.about_sources_title)) {
+                Body(stringResource(R.string.about_sources_headlines))
+                LinkButton(stringResource(R.string.about_link_gdelt), "https://www.gdeltproject.org")
+                Body(stringResource(R.string.about_sources_sea))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    LinkButton("Open-Meteo", "https://open-meteo.com")
-                    LinkButton("CC BY 4.0", "https://creativecommons.org/licenses/by/4.0/")
+                    LinkButton(stringResource(R.string.about_link_open_meteo), "https://open-meteo.com")
+                    LinkButton(stringResource(R.string.about_link_cc_by), "https://creativecommons.org/licenses/by/4.0/")
                 }
-                Body("Place lookup: your device's built-in geocoder. Location: Google Play services.")
+                Body(stringResource(R.string.about_sources_places))
             }
 
-            Section("Privacy") {
-                Bullet(
-                    "Your location. Meanwhile asks for approximate location only, to work out the point opposite you. " +
-                        "It isn't stored, and there are no accounts.",
-                )
-                Bullet(
-                    "What leaves your phone. The point opposite you goes to your device's geocoder (usually Google) to find the " +
-                        "country and, in open-ocean mode, to Open-Meteo for sea conditions. Only a country code goes to the news " +
-                        "sources. That point is your location mirrored, so treat it as approximate-location data. You can search " +
-                        "for a place instead; searches go to the geocoder too.",
-                )
-                Bullet(
-                    "Usage and crash reports are off unless you turn them on below. If you do, Meanwhile uses Firebase, a Google " +
-                        "service, to see how the app is used and to find crashes: screens opened, whether a load worked and how long it " +
-                        "took, the country of the headlines you load, kinds of errors, your phone's model, Android and app version, and a " +
-                        "random installation ID. They never include your exact location or the place you search for. That country " +
-                        "is usually on the far side of the world from you, so it hints at roughly where you are. Turning the " +
-                        "switch off stops them and resets the ID.",
-                )
-                Bullet(
-                    "Stored on your phone: headlines for up to three days (so something shows quickly), whether you have seen " +
-                        "the welcome screen, whether you have turned down the location prompt, your choice about reports, a count of how often the app has asked, whether the flag " +
-                        "behind the header is on, and the last three places you picked from a search (the Recent places list " +
-                        "has a Clear button).",
-                )
-                Bullet(
-                    "No ads. Tapping a headline opens the publisher's own website in your browser, which has its own privacy policy.",
-                )
+            Section(stringResource(R.string.about_privacy_title)) {
+                Bullet(stringResource(R.string.about_privacy_location))
+                Bullet(stringResource(R.string.about_privacy_leaves_phone))
+                Bullet(stringResource(R.string.about_privacy_reports))
+                Bullet(stringResource(R.string.about_privacy_stored))
+                Bullet(stringResource(R.string.about_privacy_no_ads))
 
                 // The saved choice is the only source of truth; the application turns collection on and off from it.
                 val choice by settings.analyticsChoice.collectAsStateWithLifecycle(initialValue = AnalyticsChoice.Unset)
                 SwitchRow(
-                    title = "Share usage and crash data",
-                    detail = "Off unless you turn it on",
+                    title = stringResource(R.string.about_share_usage_title),
+                    detail = stringResource(R.string.about_share_usage_detail),
                     checked = choice == AnalyticsChoice.Accepted,
                     // Turning it off is an explicit no, so the app won't ask again.
                     onCheckedChange = { on ->
@@ -169,8 +138,8 @@ fun AboutScreen(locationAccess: LocationAccess, onTurnOnLocation: () -> Unit, on
                     },
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    LinkButton("Privacy policy", PRIVACY_URL)
-                    LinkButton("How Firebase handles data", "https://firebase.google.com/support/privacy")
+                    LinkButton(stringResource(R.string.about_link_privacy_policy), PRIVACY_URL)
+                    LinkButton(stringResource(R.string.about_link_firebase), "https://firebase.google.com/support/privacy")
                 }
 
                 // Only in debug builds: lets you check that crash reports arrive in the Firebase console.
@@ -181,21 +150,21 @@ fun AboutScreen(locationAccess: LocationAccess, onTurnOnLocation: () -> Unit, on
                 }
             }
 
-            Section("Support") {
-                Body("This project is a labour of love. If you are able and willing to support my work, please buy me a coffee.")
+            Section(stringResource(R.string.about_support_title)) {
+                Body(stringResource(R.string.about_support_body))
                 Button(onClick = {
                     telemetry.log(TelemetryEvent.KofiOpened)
                     openUrl(context, KOFI_URL)
-                }) { Text("Buy me a coffee") }
+                }) { Text(stringResource(R.string.about_support_button)) }
             }
 
-            Section("Open source") {
-                Body("Meanwhile is built with open source software. See the licenses for the libraries it uses.")
+            Section(stringResource(R.string.about_open_source_title)) {
+                Body(stringResource(R.string.about_open_source_body))
                 OutlinedButton(onClick = {
                     telemetry.log(TelemetryEvent.LicensesOpened)
                     context.startActivity(Intent(context, OssLicensesMenuActivity::class.java))
                 }) {
-                    Text("Open source licenses")
+                    Text(stringResource(R.string.about_open_source_button))
                 }
             }
         }
@@ -248,5 +217,5 @@ private fun openUrl(context: Context, url: String) {
     runCatching { CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(url)) }
 }
 
-private fun versionName(context: Context): String =
-    runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "unknown"
+private fun versionName(context: Context): String? =
+    runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull()

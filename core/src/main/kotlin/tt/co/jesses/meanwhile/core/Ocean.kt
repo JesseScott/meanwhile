@@ -20,13 +20,15 @@ import kotlin.math.sin
  * Rough ocean basin for a point, from simple lat/lon rules. Good enough to say "the Indian Ocean";
  * it ignores marginal seas and gets the Atlantic/Pacific split wrong near the Americas' tips.
  */
-fun oceanNameAt(point: LatLon): String = when {
-    point.lat <= -60.0 -> "Southern Ocean"
-    point.lat >= 66.0 -> "Arctic Ocean"
-    point.lon >= -70.0 && point.lon < 20.0 -> "Atlantic Ocean"
-    point.lon >= 20.0 && point.lon < 120.0 -> "Indian Ocean"
-    else -> "Pacific Ocean"
+fun oceanAt(point: LatLon): Ocean = when {
+    point.lat <= -60.0 -> Ocean.Southern
+    point.lat >= 66.0 -> Ocean.Arctic
+    point.lon >= -70.0 && point.lon < 20.0 -> Ocean.Atlantic
+    point.lon >= 20.0 && point.lon < 120.0 -> Ocean.Indian
+    else -> Ocean.Pacific
 }
+
+enum class Ocean { Southern, Arctic, Atlantic, Indian, Pacific }
 
 enum class DayPhase { Day, Twilight, Night }
 
@@ -58,22 +60,25 @@ fun dayPhaseOf(sunAltitudeDeg: Double): DayPhase = when {
 
 private fun normalizeDeg(deg: Double): Double = deg - 360.0 * floor(deg / 360.0)
 
-private val COMPASS_16 = listOf("N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW")
+/** The 16 compass points, clockwise from north. */
+enum class CompassPoint { N, NNE, NE, ENE, E, ESE, SE, SSE, S, SSW, SW, WSW, W, WNW, NW, NNW }
 
-fun compassPoint(deg: Double): String = COMPASS_16[((normalizeDeg(deg) + 11.25) / 22.5).toInt() % 16]
+fun compassPoint(deg: Double): CompassPoint = CompassPoint.entries[((normalizeDeg(deg) + 11.25) / 22.5).toInt() % 16]
 
 /** Douglas sea scale, by significant wave height in metres. */
-fun seaState(waveHeightM: Double): String = when {
-    waveHeightM < 0.1 -> "Calm"
-    waveHeightM < 0.5 -> "Calm, rippled"
-    waveHeightM < 1.25 -> "Smooth"
-    waveHeightM < 2.5 -> "Slight"
-    waveHeightM < 4.0 -> "Moderate"
-    waveHeightM < 6.0 -> "Rough"
-    waveHeightM < 9.0 -> "Very rough"
-    waveHeightM < 14.0 -> "High"
-    else -> "Phenomenal"
+fun seaState(waveHeightM: Double): SeaState = when {
+    waveHeightM < 0.1 -> SeaState.Calm
+    waveHeightM < 0.5 -> SeaState.CalmRippled
+    waveHeightM < 1.25 -> SeaState.Smooth
+    waveHeightM < 2.5 -> SeaState.Slight
+    waveHeightM < 4.0 -> SeaState.Moderate
+    waveHeightM < 6.0 -> SeaState.Rough
+    waveHeightM < 9.0 -> SeaState.VeryRough
+    waveHeightM < 14.0 -> SeaState.High
+    else -> SeaState.Phenomenal
 }
+
+enum class SeaState { Calm, CalmRippled, Smooth, Slight, Moderate, Rough, VeryRough, High, Phenomenal }
 
 data class MarineConditions(
     val waveHeightM: Double?,

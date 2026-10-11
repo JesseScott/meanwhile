@@ -41,7 +41,7 @@ sealed interface UiNotice {
 data class UiState(
     val status: Status = Status.Idle,
     val mode: ViewMode = ViewMode.Land,
-    /** Where the user is, as a label ("Your location" or a searched place). */
+    /** The searched place the user chose, as a label; null for the device's own location. */
     val originLabel: String? = null,
     val antipode: LatLon? = null,
     val country: ResolvedCountry? = null,

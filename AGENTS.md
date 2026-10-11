@@ -24,7 +24,8 @@ JDK 17. OkHttp is pinned to 5.1.0 in `:app` (newer versions need a newer compile
 - `:core` is plain Kotlin/JVM and holds everything testable: geometry, ISO-to-FIPS codes, news sources, cleaning rules,
   ocean maths, telemetry vocabulary, settings. One test file per class, no network (Ktor `MockEngine`, virtual time).
 - `:app` is Compose with MVI: `UiEvent` into `MainViewModel`, out come an immutable `UiState` and one-shot `UiEffect`s
-  (`UiContract.kt`). All user-facing wording lives in `ui/Messages.kt`; state carries typed values, never text.
+  (`UiContract.kt`). All user-facing wording lives in `res/values/strings.xml`, and `ui/Messages.kt` maps typed values to it; state
+  carries typed values, never text. `HardcodedTextTest` fails on a string literal handed to a composable in `ui/`.
   Never expose a news source's name or internals to the user.
 - Headlines: `FallbackNewsSource` asks GDELT and the curated RSS feeds (`CuratedFeeds.kt`, keyed by **FIPS** code, not
   ISO) concurrently and streams snapshots. `CachingNewsSource` shows a recent entry at once, then replaces it with the

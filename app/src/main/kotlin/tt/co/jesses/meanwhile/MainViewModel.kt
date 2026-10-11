@@ -154,7 +154,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 _state.update { it.copy(status = Status.Error, error = UiError.LocationUnavailable) }
             } else {
                 telemetry.log(TelemetryEvent.PlaceChosen(PlaceSource.Device))
-                loadFor(here, "Your location", LoadKind.NewPlace)
+                loadFor(here, label = null, LoadKind.NewPlace)
             }
         }
     }

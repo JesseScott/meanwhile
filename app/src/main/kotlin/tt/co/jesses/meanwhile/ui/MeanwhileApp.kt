@@ -33,12 +33,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import tt.co.jesses.meanwhile.MainViewModel
 import tt.co.jesses.meanwhile.MeanwhileApplication
+import tt.co.jesses.meanwhile.R
 import kotlinx.coroutines.launch
 import tt.co.jesses.meanwhile.Status
 import tt.co.jesses.meanwhile.core.AnalyticsChoice
@@ -57,6 +59,7 @@ import tt.co.jesses.meanwhile.ViewMode
 @Composable
 fun MeanwhileApp(viewModel: MainViewModel) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -147,8 +150,10 @@ fun MeanwhileApp(viewModel: MainViewModel) {
             when (effect) {
                 is UiEffect.OfferNearestLand -> {
                     val answer = snackbar.showSnackbar(
-                        message = "Your antipode is open water. Read headlines from ${effect.country}, about ${"%,d".format(effect.distanceKm)} km away?",
-                        actionLabel = "Show headlines",
+                        message = resources.getString(
+                            R.string.offer_nearest_land_message, effect.country, wholeNumber(effect.distanceKm),
+                        ),
+                        actionLabel = resources.getString(R.string.offer_nearest_land_action),
                         withDismissAction = true,
                         duration = SnackbarDuration.Long,
                     )
@@ -158,8 +163,8 @@ fun MeanwhileApp(viewModel: MainViewModel) {
                 }
                 UiEffect.AskToShareUsage -> {
                     val answer = snackbar.showSnackbar(
-                        message = "Help improve Meanwhile? You can share anonymous usage and crash reports.",
-                        actionLabel = "Turn on",
+                        message = resources.getString(R.string.share_usage_message),
+                        actionLabel = resources.getString(R.string.share_usage_action),
                         withDismissAction = true,
                         duration = SnackbarDuration.Long,
                     )
