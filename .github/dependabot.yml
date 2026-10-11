@@ -1,6 +1,7 @@
 # Dependabot version updates: a weekly check of the Gradle dependencies (gradle/libs.versions.toml and the build
 # files) and of the actions the workflows use. Minor and patch updates arrive as one pull request per ecosystem;
 # each major update gets its own. The pull requests are build tooling, so they stay out of the release notes.
+# Every one is assigned to JesseScott.
 version: 2
 updates:
   - package-ecosystem: gradle
@@ -9,6 +10,8 @@ updates:
       interval: weekly
     labels:
       - skip-changelog
+    assignees:
+      - JesseScott
     groups:
       gradle-minor-and-patch:
         update-types:
@@ -24,6 +27,8 @@ updates:
       interval: weekly
     labels:
       - skip-changelog
+    assignees:
+      - JesseScott
     groups:
       actions-minor-and-patch:
         update-types:
