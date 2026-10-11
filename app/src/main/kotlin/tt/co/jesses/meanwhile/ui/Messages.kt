@@ -3,6 +3,7 @@ package tt.co.jesses.meanwhile.ui
 import tt.co.jesses.meanwhile.Progress
 import tt.co.jesses.meanwhile.UiError
 import tt.co.jesses.meanwhile.UiNotice
+import tt.co.jesses.meanwhile.core.LocationAccess
 import tt.co.jesses.meanwhile.core.Recency
 
 /*
@@ -36,6 +37,19 @@ fun UiNotice.text(): String = when (this) {
     is UiNotice.NoPlaces -> "No places found for \"$query\"."
     UiNotice.LocationDenied -> "Location is off for Meanwhile. Search for a place, or turn it on in your phone's settings."
     UiNotice.RefreshFailed -> "Couldn't refresh. Showing what we had."
+}
+
+/** The Location row on the About screen: its detail line, and the button that turns location on (none when it is on). */
+fun LocationAccess.detail(): String = when (this) {
+    LocationAccess.On -> "On. Meanwhile can use your approximate location."
+    LocationAccess.CanAsk -> "Off. Meanwhile will ask Android for your approximate location."
+    LocationAccess.Blocked -> "Off. Android has stopped asking, so turn it on under Permissions in the app's settings."
+}
+
+fun LocationAccess.action(): String? = when (this) {
+    LocationAccess.On -> null
+    LocationAccess.CanAsk -> "Turn on"
+    LocationAccess.Blocked -> "Open settings"
 }
 
 fun Recency.text(): String = when (this) {

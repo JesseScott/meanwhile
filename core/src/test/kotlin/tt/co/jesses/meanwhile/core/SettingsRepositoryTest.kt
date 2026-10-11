@@ -48,6 +48,18 @@ class SettingsRepositoryTest {
     }
 
     @Test
+    fun aRefusedLocationPromptIsRememberedUntilCleared() = runTest {
+        val (repo, _) = repository()
+        assertFalse(repo.locationRefused.first())
+
+        repo.setLocationRefused(true)
+        assertTrue(repo.locationRefused.first())
+
+        repo.setLocationRefused(false)
+        assertFalse(repo.locationRefused.first())
+    }
+
+    @Test
     fun theFlagWashIsOnUntilTurnedOff() = runTest {
         val (repo, _) = repository()
         assertTrue(repo.flagWash.first())
