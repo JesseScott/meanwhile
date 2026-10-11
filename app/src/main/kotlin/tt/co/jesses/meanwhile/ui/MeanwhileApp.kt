@@ -70,6 +70,8 @@ fun MeanwhileApp(viewModel: MainViewModel) {
     // already answered, the screen's own hint and "Use my location" button take over.
     // null until the saved setting has been read (a few milliseconds), so the screen waits instead of flashing the wrong one.
     val introSeen by produceState<Boolean?>(initialValue = null) { settings.introSeen.collect { value = it } }
+    // Off until the saved setting has been read, so a wash the user turned off never flashes up at launch.
+    val flagWash by produceState(initialValue = false) { settings.flagWash.collect { value = it } }
     var introDismissed by rememberSaveable { mutableStateOf(false) }
     val showIntro = introSeen == false && !introDismissed && !hasLocationPermission()
     var showAbout by rememberSaveable { mutableStateOf(false) }
@@ -127,6 +129,7 @@ fun MeanwhileApp(viewModel: MainViewModel) {
                 showAbout -> AboutScreen(onBack = { showAbout = false })
                 else -> MeanwhileScreen(
                     state = state,
+                    showFlagWash = flagWash,
                     onUseLocation = useLocation,
                     onEvent = viewModel::onEvent,
                     onOpenAbout = {

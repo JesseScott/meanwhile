@@ -118,6 +118,7 @@ private const val YOUR_LOCATION = "Your location"
 @Composable
 fun MeanwhileScreen(
     state: UiState,
+    showFlagWash: Boolean,
     onUseLocation: () -> Unit,
     onEvent: (UiEvent) -> Unit,
     onOpenAbout: () -> Unit,
@@ -145,9 +146,9 @@ fun MeanwhileScreen(
         // screen it would fill the phone, so it is capped and scrolls on its own.
         Box(Modifier.fillMaxWidth()) {
             // The country's flag as a faint wash behind it all. It matches the column's size and never sets it,
-            // and there is none over the sea or before a country is known.
+            // and there is none over the sea, before a country is known, or when it is turned off in About.
             FlagWash(
-                iso = state.country?.iso?.takeIf { state.antipode != null && !state.showingOcean },
+                iso = state.country?.iso?.takeIf { showFlagWash && state.antipode != null && !state.showingOcean },
                 modifier = Modifier.matchParentSize(),
             )
             Column(
