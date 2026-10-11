@@ -7,8 +7,11 @@ import tt.co.jesses.meanwhile.Progress
 import tt.co.jesses.meanwhile.R
 import tt.co.jesses.meanwhile.UiError
 import tt.co.jesses.meanwhile.UiNotice
+import tt.co.jesses.meanwhile.core.CompassPoint
 import tt.co.jesses.meanwhile.core.LocationAccess
+import tt.co.jesses.meanwhile.core.Ocean
 import tt.co.jesses.meanwhile.core.Recency
+import tt.co.jesses.meanwhile.core.SeaState
 import java.math.RoundingMode
 import java.text.NumberFormat
 
@@ -76,6 +79,51 @@ fun Recency.text(): String = when (this) {
     Recency.Today -> stringResource(R.string.recency_today)
     Recency.Yesterday -> stringResource(R.string.recency_yesterday)
     Recency.Earlier -> stringResource(R.string.recency_earlier)
+}
+
+@Composable
+@ReadOnlyComposable
+fun Ocean.text(): String = when (this) {
+    Ocean.Southern -> stringResource(R.string.ocean_name_southern)
+    Ocean.Arctic -> stringResource(R.string.ocean_name_arctic)
+    Ocean.Atlantic -> stringResource(R.string.ocean_name_atlantic)
+    Ocean.Indian -> stringResource(R.string.ocean_name_indian)
+    Ocean.Pacific -> stringResource(R.string.ocean_name_pacific)
+}
+
+@Composable
+@ReadOnlyComposable
+fun SeaState.text(): String = when (this) {
+    SeaState.Calm -> stringResource(R.string.sea_state_calm)
+    SeaState.CalmRippled -> stringResource(R.string.sea_state_calm_rippled)
+    SeaState.Smooth -> stringResource(R.string.sea_state_smooth)
+    SeaState.Slight -> stringResource(R.string.sea_state_slight)
+    SeaState.Moderate -> stringResource(R.string.sea_state_moderate)
+    SeaState.Rough -> stringResource(R.string.sea_state_rough)
+    SeaState.VeryRough -> stringResource(R.string.sea_state_very_rough)
+    SeaState.High -> stringResource(R.string.sea_state_high)
+    SeaState.Phenomenal -> stringResource(R.string.sea_state_phenomenal)
+}
+
+@Composable
+@ReadOnlyComposable
+fun CompassPoint.text(): String = when (this) {
+    CompassPoint.N -> stringResource(R.string.compass_n)
+    CompassPoint.NNE -> stringResource(R.string.compass_nne)
+    CompassPoint.NE -> stringResource(R.string.compass_ne)
+    CompassPoint.ENE -> stringResource(R.string.compass_ene)
+    CompassPoint.E -> stringResource(R.string.compass_e)
+    CompassPoint.ESE -> stringResource(R.string.compass_ese)
+    CompassPoint.SE -> stringResource(R.string.compass_se)
+    CompassPoint.SSE -> stringResource(R.string.compass_sse)
+    CompassPoint.S -> stringResource(R.string.compass_s)
+    CompassPoint.SSW -> stringResource(R.string.compass_ssw)
+    CompassPoint.SW -> stringResource(R.string.compass_sw)
+    CompassPoint.WSW -> stringResource(R.string.compass_wsw)
+    CompassPoint.W -> stringResource(R.string.compass_w)
+    CompassPoint.WNW -> stringResource(R.string.compass_wnw)
+    CompassPoint.NW -> stringResource(R.string.compass_nw)
+    CompassPoint.NNW -> stringResource(R.string.compass_nnw)
 }
 
 /** A whole number with the locale's digit grouping ("12,300"), to hand to a string resource as text. */

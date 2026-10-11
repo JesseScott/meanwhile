@@ -117,4 +117,110 @@
     <!-- Snackbar: asks, once the app has been used a few times, whether to share usage and crash reports. -->
     <string name="share_usage_message">Help improve Meanwhile? You can share anonymous usage and crash reports.</string>
     <string name="share_usage_action">Turn on</string>
+
+    <!-- Rough ocean names, shown as the place when the opposite point is at sea. -->
+    <string name="ocean_name_southern">Southern Ocean</string>
+    <string name="ocean_name_arctic">Arctic Ocean</string>
+    <string name="ocean_name_atlantic">Atlantic Ocean</string>
+    <string name="ocean_name_indian">Indian Ocean</string>
+    <string name="ocean_name_pacific">Pacific Ocean</string>
+
+    <!-- Sea states from the Douglas sea scale, calmest to roughest. Use the names your language's marine forecasts use. -->
+    <string name="sea_state_calm">Calm</string>
+    <string name="sea_state_calm_rippled">Calm, rippled</string>
+    <string name="sea_state_smooth">Smooth</string>
+    <string name="sea_state_slight">Slight</string>
+    <string name="sea_state_moderate">Moderate</string>
+    <string name="sea_state_rough">Rough</string>
+    <string name="sea_state_very_rough">Very rough</string>
+    <string name="sea_state_high">High</string>
+    <string name="sea_state_phenomenal">Phenomenal</string>
+
+    <!-- Compass points, abbreviated: N is north, NNE is north-north-east, and so on clockwise. -->
+    <string name="compass_n">N</string>
+    <string name="compass_nne">NNE</string>
+    <string name="compass_ne">NE</string>
+    <string name="compass_ene">ENE</string>
+    <string name="compass_e">E</string>
+    <string name="compass_ese">ESE</string>
+    <string name="compass_se">SE</string>
+    <string name="compass_sse">SSE</string>
+    <string name="compass_s">S</string>
+    <string name="compass_ssw">SSW</string>
+    <string name="compass_sw">SW</string>
+    <string name="compass_wsw">WSW</string>
+    <string name="compass_w">W</string>
+    <string name="compass_wnw">WNW</string>
+    <string name="compass_nw">NW</string>
+    <string name="compass_nnw">NNW</string>
+
+    <!-- Location intro: shown once, before Android's own location prompt. -->
+    <string name="intro_what_it_does">It shows what\'s happening on the opposite side of the Earth from where you are.</string>
+    <string name="intro_location_title">Your approximate location</string>
+    <!-- A privacy promise: keep "only" and "approximate" exact. -->
+    <string name="intro_location_body">Next, Android will ask to share your approximate location. Meanwhile only uses it to work out the point exactly opposite you.</string>
+    <string name="intro_ocean_title">Mostly ocean</string>
+    <string name="intro_ocean_body">For most people that point is open water. You\'ll see the sea first, with a prompt to read headlines from the nearest land.</string>
+    <string name="intro_keep_title">What we keep</string>
+    <!-- A privacy promise: the location is not stored, and reports are off by default. "About" is the name of the About screen. -->
+    <string name="intro_keep_body">Meanwhile doesn\'t store your location, and there\'s no account. Usage and crash reports are off unless you turn them on under About, where you can also read the details.</string>
+    <string name="intro_continue">Continue</string>
+    <string name="intro_search_instead">Search for a place instead</string>
+
+    <!-- About screen. -->
+    <!-- Accessibility label for the back arrow. -->
+    <string name="about_back">Back</string>
+    <string name="about_title">About</string>
+    <!-- %1$s is the app's version, such as "0.1.0". -->
+    <string name="about_version">Version %1$s</string>
+    <!-- Used in place of the version number when it can't be read. -->
+    <string name="about_version_unknown">unknown</string>
+    <!-- "Antipode" is the point on the exact opposite side of the Earth. -->
+    <string name="about_what_it_does">Meanwhile finds the point exactly opposite you on Earth, your antipode, and shows what is happening there: headlines from that country, or from the nearest land if the point is open water. When it is open water you can also look at the sea itself.</string>
+    <string name="about_hobby">A hobby project by Jesse Scott. It is free, has no ads, and isn\'t a business.</string>
+    <string name="about_link_site" translatable="false">jesses.co.tt</string>
+
+    <string name="about_location_title">Location</string>
+    <string name="about_use_my_location">Use my location</string>
+
+    <string name="about_appearance_title">Appearance</string>
+    <string name="about_flag_wash_title">Flag behind the header</string>
+    <string name="about_flag_wash_detail">A faint wash of the country\'s flag colours</string>
+
+    <string name="about_sources_title">Where the data comes from</string>
+    <!-- Names of projects, services and licences in this section are not translated. -->
+    <string name="about_sources_headlines">Headlines: the GDELT Project (gdeltproject.org), a free, open database of world news, plus a few public news feeds from local outlets. Meanwhile shows article titles only and links to the publishers\' own sites. Titles appear as published, in their original language, and GDELT can occasionally file an outlet under the wrong country.</string>
+    <string name="about_link_gdelt" translatable="false">GDELT Project</string>
+    <!-- "Not for navigation" is a safety warning: the sea data must not be used to steer a boat. -->
+    <string name="about_sources_sea">Sea conditions: the Open-Meteo.com Marine API, with data from DWD and other national weather services, used under the CC BY 4.0 license for non-commercial purposes. Not for navigation.</string>
+    <string name="about_link_open_meteo" translatable="false">Open-Meteo</string>
+    <string name="about_link_cc_by" translatable="false">CC BY 4.0</string>
+    <!-- A geocoder turns coordinates into place names and back. -->
+    <string name="about_sources_places">Place lookup: your device\'s built-in geocoder. Location: Google Play services.</string>
+
+    <string name="about_privacy_title">Privacy</string>
+    <!-- The privacy bullets below are promises to the user, and they match the privacy policy on jesses.co.tt.
+         Translate them closely: do not strengthen, weaken or leave out any statement. -->
+    <!-- Promises: approximate location only, not stored, no accounts. -->
+    <string name="about_privacy_location">Your location. Meanwhile asks for approximate location only, to work out the point opposite you. It isn\'t stored, and there are no accounts.</string>
+    <!-- Says exactly what is sent and to whom. "Only a country code" is a promise. "Open-ocean mode" is the "Open ocean" view. -->
+    <string name="about_privacy_leaves_phone">What leaves your phone. The point opposite you goes to your device\'s geocoder (usually Google) to find the country and, in open-ocean mode, to Open-Meteo for sea conditions. Only a country code goes to the news sources. That point is your location mirrored, so treat it as approximate-location data. You can search for a place instead; searches go to the geocoder too.</string>
+    <!-- Reports are off by default, and the list of what they contain is complete. "They never include" is a promise.
+         "The switch" is the "Share usage and crash data" switch below this list. -->
+    <string name="about_privacy_reports">Usage and crash reports are off unless you turn them on below. If you do, Meanwhile uses Firebase, a Google service, to see how the app is used and to find crashes: screens opened, whether a load worked and how long it took, the country of the headlines you load, kinds of errors, your phone\'s model, Android and app version, and a random installation ID. They never include your exact location or the place you search for. That country is usually on the far side of the world from you, so it hints at roughly where you are. Turning the switch off stops them and resets the ID.</string>
+    <!-- A complete list of what the app keeps on the phone. "Recent places" and "Clear" are the labels used on the main screen. -->
+    <string name="about_privacy_stored">Stored on your phone: headlines for up to three days (so something shows quickly), whether you have seen the welcome screen, whether you have turned down the location prompt, your choice about reports, a count of how often the app has asked, whether the flag behind the header is on, and the last three places you picked from a search (the Recent places list has a Clear button).</string>
+    <string name="about_privacy_no_ads">No ads. Tapping a headline opens the publisher\'s own website in your browser, which has its own privacy policy.</string>
+    <string name="about_share_usage_title">Share usage and crash data</string>
+    <string name="about_share_usage_detail">Off unless you turn it on</string>
+    <string name="about_link_privacy_policy">Privacy policy</string>
+    <string name="about_link_firebase">How Firebase handles data</string>
+
+    <string name="about_support_title">Support</string>
+    <string name="about_support_body">This project is a labour of love. If you are able and willing to support my work, please buy me a coffee.</string>
+    <string name="about_support_button">Buy me a coffee</string>
+
+    <string name="about_open_source_title">Open source</string>
+    <string name="about_open_source_body">Meanwhile is built with open source software. See the licenses for the libraries it uses.</string>
+    <string name="about_open_source_button">Open source licenses</string>
 </resources>

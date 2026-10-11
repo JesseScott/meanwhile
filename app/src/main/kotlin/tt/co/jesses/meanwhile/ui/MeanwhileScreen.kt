@@ -99,7 +99,7 @@ import tt.co.jesses.meanwhile.core.approxUtcOffsetHours
 import tt.co.jesses.meanwhile.core.compassPoint
 import tt.co.jesses.meanwhile.core.dayPhaseOf
 import tt.co.jesses.meanwhile.core.flagEmoji
-import tt.co.jesses.meanwhile.core.oceanNameAt
+import tt.co.jesses.meanwhile.core.oceanAt
 import tt.co.jesses.meanwhile.core.roughKm
 import tt.co.jesses.meanwhile.core.seaState
 import tt.co.jesses.meanwhile.core.seenInstant
@@ -112,9 +112,6 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.abs
 import kotlin.math.roundToInt
-
-/** The label the view model gives a place that came from the device's location. */
-private const val YOUR_LOCATION = "Your location"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -459,11 +456,11 @@ private fun Header(state: UiState, onOpenAbout: () -> Unit) {
         val antipode = state.antipode
         if (country != null && antipode != null) {
             val ocean = state.showingOcean
-            val title = if (ocean) "🌊 ${oceanNameAt(antipode)}" else "${flagEmoji(country.iso)} ${country.name}"
+            val title = if (ocean) "🌊 ${oceanAt(antipode).text()}" else "${flagEmoji(country.iso)} ${country.name}"
             // Each line is one line, and both views use the same text for the open-water note, so switching
             // between them can't change the header's height.
             Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            val place = state.originLabel?.takeIf { it != YOUR_LOCATION }?.substringBefore(",")?.trim()
+            val place = state.originLabel?.substringBefore(",")?.trim()
             val time = localTimeThere(antipode)
             Text(
                 if (place != null) stringResource(R.string.header_opposite_place, place, time)
@@ -532,8 +529,8 @@ private fun OceanCard(state: UiState) {
 private fun MarineRows(marine: MarineConditions) {
     marine.waveHeightM?.let { height ->
         val detail = listOfNotNull(
-            seaState(height),
-            marine.waveDirectionDeg?.let { stringResource(R.string.ocean_waves_from, compassPoint(it)) },
+            seaState(height).text(),
+            marine.waveDirectionDeg?.let { stringResource(R.string.ocean_waves_from, compassPoint(it).text()) },
             marine.wavePeriodS?.let { stringResource(R.string.ocean_waves_every, it.roundToInt()) },
         ).joinToString(", ")
         Fact(stringResource(R.string.ocean_waves), stringResource(R.string.unit_metres, oneDecimal(height)), detail)

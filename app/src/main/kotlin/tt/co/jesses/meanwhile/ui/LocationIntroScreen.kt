@@ -19,8 +19,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import tt.co.jesses.meanwhile.R
 
 /**
  * Shown once, before the system location prompt, so the prompt isn't a surprise: what Meanwhile does, why it
@@ -39,29 +41,28 @@ fun LocationIntroScreen(
         ) {
             AntipodeMark(Modifier.size(88.dp))
             Column {
-                Text("Meanwhile", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
                 Text(tagline(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(
-                "It shows what's happening on the opposite side of the Earth from where you are.",
+                stringResource(R.string.intro_what_it_does),
                 style = MaterialTheme.typography.bodyLarge,
             )
             Point(
-                "Your approximate location",
-                "Next, Android will ask to share your approximate location. Meanwhile only uses it to work out the point exactly opposite you.",
+                stringResource(R.string.intro_location_title),
+                stringResource(R.string.intro_location_body),
             )
             Point(
-                "Mostly ocean",
-                "For most people that point is open water. You'll see the sea first, with a prompt to read headlines from the nearest land.",
+                stringResource(R.string.intro_ocean_title),
+                stringResource(R.string.intro_ocean_body),
             )
             Point(
-                "What we keep",
-                "Meanwhile doesn't store your location, and there's no account. Usage and crash reports are off unless you turn " +
-                    "them on under About, where you can also read the details.",
+                stringResource(R.string.intro_keep_title),
+                stringResource(R.string.intro_keep_body),
             )
         }
-        Button(onClick = onContinue, modifier = Modifier.fillMaxWidth()) { Text("Continue") }
-        TextButton(onClick = onSearchInstead, modifier = Modifier.fillMaxWidth()) { Text("Search for a place instead") }
+        Button(onClick = onContinue, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.intro_continue)) }
+        TextButton(onClick = onSearchInstead, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.intro_search_instead)) }
     }
 }
 

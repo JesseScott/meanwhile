@@ -9,12 +9,12 @@ import kotlin.test.assertTrue
 class OceanTest {
     @Test
     fun namesTheBasin() {
-        assertEquals("Indian Ocean", oceanNameAt(LatLon(-49.26, 56.95)))
-        assertEquals("Pacific Ocean", oceanNameAt(LatLon(0.0, -150.0)))
-        assertEquals("Pacific Ocean", oceanNameAt(LatLon(-30.0, 170.0)))
-        assertEquals("Atlantic Ocean", oceanNameAt(LatLon(30.0, -40.0)))
-        assertEquals("Southern Ocean", oceanNameAt(LatLon(-70.0, 0.0)))
-        assertEquals("Arctic Ocean", oceanNameAt(LatLon(80.0, 0.0)))
+        assertEquals(Ocean.Indian, oceanAt(LatLon(-49.26, 56.95)))
+        assertEquals(Ocean.Pacific, oceanAt(LatLon(0.0, -150.0)))
+        assertEquals(Ocean.Pacific, oceanAt(LatLon(-30.0, 170.0)))
+        assertEquals(Ocean.Atlantic, oceanAt(LatLon(30.0, -40.0)))
+        assertEquals(Ocean.Southern, oceanAt(LatLon(-70.0, 0.0)))
+        assertEquals(Ocean.Arctic, oceanAt(LatLon(80.0, 0.0)))
     }
 
     @Test
@@ -44,13 +44,13 @@ class OceanTest {
 
     @Test
     fun compassPointsAndSeaState() {
-        assertEquals("N", compassPoint(0.0))
-        assertEquals("N", compassPoint(359.0))
-        assertEquals("SW", compassPoint(225.0))
-        assertEquals("SW", compassPoint(234.0))
-        assertEquals("Very rough", seaState(5.36 + 1.0))
-        assertEquals("Rough", seaState(5.36))
-        assertEquals("Calm", seaState(0.0))
+        assertEquals(CompassPoint.N, compassPoint(0.0))
+        assertEquals(CompassPoint.N, compassPoint(359.0))
+        assertEquals(CompassPoint.SW, compassPoint(225.0))
+        assertEquals(CompassPoint.SW, compassPoint(234.0))
+        assertEquals(SeaState.VeryRough, seaState(5.36 + 1.0))
+        assertEquals(SeaState.Rough, seaState(5.36))
+        assertEquals(SeaState.Calm, seaState(0.0))
     }
 
     @Test
