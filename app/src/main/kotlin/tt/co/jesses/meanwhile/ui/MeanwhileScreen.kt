@@ -143,26 +143,34 @@ fun MeanwhileScreen(
         // the place (one line each), the view switch, and the search bar. Messages, errors and progress text
         // live in the list below, so nothing here moves when a load starts or finishes. With big text or a small
         // screen it would fill the phone, so it is capped and scrolls on its own.
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(max = this@BoxWithConstraints.maxHeight * 0.5f)
-                .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Header(state, onOpenAbout)
-            if (state.antipodeIsWater) ModeSwitch(state.mode) { onEvent(UiEvent.SetMode(it)) }
-            SearchBar(
-                query = query,
-                onQueryChange = { query = it },
-                onFocusChange = { searchFocused = it },
-                places = state.searchResults,
-                onSearch = { onEvent(UiEvent.Search(it)) },
-                onPick = { onEvent(UiEvent.PickPlace(it)) },
-                onDismissPlaces = { onEvent(UiEvent.DismissPlaces) },
-                onUseLocation = onUseLocation,
+        Box(Modifier.fillMaxWidth()) {
+            // The country's flag as a faint wash behind it all. It matches the column's size and never sets it,
+            // and there is none over the sea or before a country is known.
+            FlagWash(
+                iso = state.country?.iso?.takeIf { state.antipode != null && !state.showingOcean },
+                modifier = Modifier.matchParentSize(),
             )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = this@BoxWithConstraints.maxHeight * 0.5f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Header(state, onOpenAbout)
+                if (state.antipodeIsWater) ModeSwitch(state.mode) { onEvent(UiEvent.SetMode(it)) }
+                SearchBar(
+                    query = query,
+                    onQueryChange = { query = it },
+                    onFocusChange = { searchFocused = it },
+                    places = state.searchResults,
+                    onSearch = { onEvent(UiEvent.Search(it)) },
+                    onPick = { onEvent(UiEvent.PickPlace(it)) },
+                    onDismissPlaces = { onEvent(UiEvent.DismissPlaces) },
+                    onUseLocation = onUseLocation,
+                )
+            }
         }
         // A fixed-height strip: the rule under the header, with a thin progress bar over it while anything loads.
         Box(Modifier.fillMaxWidth().height(4.dp)) {
