@@ -40,7 +40,7 @@ fun LocationIntroScreen(
             AntipodeMark(Modifier.size(88.dp))
             Column {
                 Text("Meanwhile", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                Text(TAGLINE, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(tagline(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(
                 "It shows what's happening on the opposite side of the Earth from where you are.",

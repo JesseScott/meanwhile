@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">Meanwhile</string>
+
+    <!-- What the app is, in one line. Shown under the app name on the main screen and on the location intro. -->
+    <string name="tagline">News from the other side of the world</string>
+
+    <!-- Progress: one line next to a spinner, saying what a load is doing right now. -->
+    <string name="progress_loading">Loading…</string>
+    <string name="progress_locating">Getting your location…</string>
+    <string name="progress_finding_land">Looking for land on the other side of the world…</string>
+    <!-- %1$s is a country name. -->
+    <string name="progress_fetching_headlines">Fetching headlines from %1$s… this can take up to a minute the first time.</string>
+    <!-- Shown while loading sea conditions (waves, water temperature) for a spot in the open ocean. -->
+    <string name="progress_reading_sea">Reading the sea…</string>
+    <!-- %1$s is the country that was just tried. -->
+    <string name="progress_trying_next">%1$s had no headlines, trying the next closest country…</string>
+    <string name="progress_checking_more">Checking for more headlines…</string>
+
+    <!-- Errors: a load failed and there is nothing to show. "Antipode" is the point on the exact opposite side of the Earth. -->
+    <string name="error_location_off">Location is turned off on your phone. Turn it on, or search for a place.</string>
+    <string name="error_location_unavailable">Couldn\'t get your location. Try again, or search for a place.</string>
+    <string name="error_no_land_nearby">Couldn\'t find any land near your antipode. Try another place.</string>
+    <string name="error_no_headlines">No headlines found near your antipode. Try another place.</string>
+    <!-- The news services are overloaded or refusing requests for the moment. -->
+    <string name="error_busy">Headlines are busy right now. Try again in a minute.</string>
+    <string name="error_offline">You seem to be offline. Check your connection and try again.</string>
+    <string name="error_unknown">Something went wrong. Try again.</string>
+    <string name="error_try_again">Try again</string>
+    <!-- Button that opens the phone's own location settings. -->
+    <string name="error_location_settings">Location settings</string>
+
+    <!-- Notices: something worth saying that doesn't replace what is on screen. -->
+    <!-- %1$s is what the user typed into the search bar. -->
+    <string name="notice_no_places">No places found for \"%1$s\".</string>
+    <string name="notice_location_denied">Location is off for Meanwhile. Search for a place, or turn it on in your phone\'s settings.</string>
+    <!-- A refresh failed, so the headlines loaded earlier stay on screen. -->
+    <string name="notice_refresh_failed">Couldn\'t refresh. Showing what we had.</string>
+    <!-- Button that opens this app's page in the phone's settings. -->
+    <string name="open_settings">Open settings</string>
+
+    <!-- The Location row on the About screen: its detail line, and the button that turns location on. -->
+    <string name="location_access_on">On. Meanwhile can use your approximate location.</string>
+    <string name="location_access_can_ask">Off. Meanwhile will ask Android for your approximate location.</string>
+    <string name="location_access_blocked">Off. Android has stopped asking, so turn it on under Permissions in the app\'s settings.</string>
+    <!-- Button: turn on location access. -->
+    <string name="location_access_turn_on">Turn on</string>
+
+    <!-- Headings over groups of headlines, by how recent they are. -->
+    <string name="recency_today">Today</string>
+    <string name="recency_yesterday">Yesterday</string>
+    <string name="recency_earlier">Earlier this week</string>
+
+    <!-- Main screen: shown before any place has been chosen. -->
+    <string name="main_hint">Allow location, or search for a place, to see what\'s happening on the other side of the world.</string>
+    <!-- Nothing was published there in the last day, so the list goes back a week. -->
+    <string name="main_quiet_today">Quiet there today, so this shows the last week.</string>
+    <!-- %1$s is a country name. -->
+    <string name="main_no_headlines_for_country">No headlines found for %1$s.</string>
+    <string name="main_no_headlines_for_region">No headlines found for that region.</string>
+    <!-- A small badge on a headline that comes from a news outlet in or about that place, not a worldwide wire. -->
+    <string name="main_local_outlet">Local outlet</string>
+
+    <!-- Main screen: the two-way switch shown when the opposite side of the world is open sea. -->
+    <string name="mode_nearest_land">Nearest land</string>
+    <string name="mode_open_ocean">Open ocean</string>
+
+    <!-- Main screen: the search bar and the list of recently picked places. -->
+    <string name="search_placeholder">Search for a place</string>
+    <!-- Accessibility label for the button that empties the search bar. -->
+    <string name="search_clear">Clear</string>
+    <!-- Accessibility label for the button that uses the phone's location. -->
+    <string name="search_use_my_location">Use my location</string>
+    <string name="recent_places_title">Recent places</string>
+    <!-- Button that empties the list of recent places. -->
+    <string name="recent_places_clear">Clear</string>
+
+    <!-- Main screen header. -->
+    <!-- Accessibility label for the settings icon, which opens the About screen. -->
+    <string name="header_open_about">About, privacy and licenses</string>
+    <!-- The place shown is on the opposite side of the Earth from the user. %1$s is the local time there, such as "3:45 PM". -->
+    <string name="header_opposite_you">Opposite you · %1$s there</string>
+    <!-- The place shown is on the opposite side of the Earth from a searched place. %1$s is that place's name, %2$s is the local time there, such as "3:45 PM". -->
+    <string name="header_opposite_place">Opposite %1$s · %2$s there</string>
+    <!-- The opposite point is at sea. %1$s is a country name, %2$s is a rounded distance, already formatted, such as "1,200". -->
+    <string name="header_open_water_note">Open water. Nearest land: %1$s, about %2$s km away.</string>
+
+    <!-- Ocean card: shown instead of headlines when the opposite side of the world is open sea. -->
+    <string name="ocean_card_title">Right now, on the other side</string>
+    <!-- %1$d is the sun's height in whole degrees. -->
+    <string name="ocean_sun_day">Daytime. The sun is %1$d° above the horizon.</string>
+    <string name="ocean_sun_twilight">Twilight. The sun is just %1$d° below the horizon.</string>
+    <string name="ocean_sun_night">Night. The sun is %1$d° below the horizon.</string>
+    <string name="ocean_no_sea_data">No sea data for this spot right now.</string>
+    <!-- Credit for the source of the sea data; the names and the licence are not translated. -->
+    <string name="ocean_sea_data_credit">Sea data: Open-Meteo.com Marine API (CC BY 4.0), from DWD and other weather services.</string>
+    <string name="ocean_waves">Waves</string>
+    <!-- Swell: long, regular waves that have travelled from distant weather. -->
+    <string name="ocean_swell">Swell</string>
+    <string name="ocean_water_temperature">Water temperature</string>
+    <!-- The ocean current (moving water), not "present". -->
+    <string name="ocean_current">Current</string>
+    <!-- Where the waves come from. %1$s is a compass point, such as "NW". -->
+    <string name="ocean_waves_from">from the %1$s</string>
+    <!-- How often a wave arrives. %1$d is a whole number of seconds. -->
+    <string name="ocean_waves_every">every %1$d s</string>
+    <!-- Measurements. %1$s is a number with one decimal, already formatted, such as "1.5". -->
+    <string name="unit_metres">%1$s m</string>
+    <string name="unit_celsius">%1$s °C</string>
+    <string name="unit_km_per_hour">%1$s km/h</string>
+
+    <!-- Snackbar: the opposite point is at sea and the sea is showing; offers headlines from the nearest country.
+         %1$s is a country name, %2$s is a rounded distance, already formatted, such as "1,200". -->
+    <string name="offer_nearest_land_message">Your antipode is open water. Read headlines from %1$s, about %2$s km away?</string>
+    <string name="offer_nearest_land_action">Show headlines</string>
+
+    <!-- Snackbar: asks, once the app has been used a few times, whether to share usage and crash reports. -->
+    <string name="share_usage_message">Help improve Meanwhile? You can share anonymous usage and crash reports.</string>
+    <string name="share_usage_action">Turn on</string>
+</resources>
