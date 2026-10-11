@@ -1,0 +1,31 @@
+# Dependabot version updates: a weekly check of the Gradle dependencies (gradle/libs.versions.toml and the build
+# files) and of the actions the workflows use. Minor and patch updates arrive as one pull request per ecosystem;
+# each major update gets its own. The pull requests are build tooling, so they stay out of the release notes.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - skip-changelog
+    groups:
+      gradle-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Held at 5.1.0 in app/build.gradle.kts: newer versions need compileSdk 37, and so AGP 9.
+      - dependency-name: "com.squareup.okhttp3:okhttp"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - skip-changelog
+    groups:
+      actions-minor-and-patch:
+        update-types:
+          - minor
+          - patch
