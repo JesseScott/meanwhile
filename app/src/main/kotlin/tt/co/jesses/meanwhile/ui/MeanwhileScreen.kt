@@ -76,6 +76,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
@@ -223,12 +228,20 @@ fun MeanwhileScreen(
                     Status.Loading -> item(key = "loading") {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                             CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                            Text(state.progress?.text() ?: stringResource(R.string.progress_loading), style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                state.progress?.text() ?: stringResource(R.string.progress_loading),
+                                modifier = Modifier.announced(),
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
                         }
                     }
                     Status.Error -> item(key = "error") {
                         Column {
-                            Text((state.error ?: UiError.Unknown).text(), color = MaterialTheme.colorScheme.error)
+                            Text(
+                                (state.error ?: UiError.Unknown).text(),
+                                modifier = Modifier.announced(),
+                                color = MaterialTheme.colorScheme.error,
+                            )
                             val noLocation = state.error == UiError.LocationUnavailable || state.error == UiError.LocationOff
                             Row {
                                 TextButton(onClick = {
@@ -278,11 +291,15 @@ fun MeanwhileScreen(
     }
 }
 
+/** A screen reader says this text when it appears or changes, without the user having to find it. */
+private fun Modifier.announced() = semantics { liveRegion = LiveRegionMode.Polite }
+
 @Composable
 private fun NoticeItem(notice: UiNotice, onOpenSettings: () -> Unit) {
     Column {
         Text(
             notice.text(),
+            modifier = Modifier.announced(),
             style = MaterialTheme.typography.bodyMedium,
             color = if (notice == UiNotice.RefreshFailed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -411,8 +428,17 @@ private fun RecentPlaces(places: List<NamedPlace>, onPick: (NamedPlace) -> Unit,
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(stringResource(R.string.recent_places_title), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            TextButton(onClick = onClear) { Text(stringResource(R.string.recent_places_clear)) }
+            Text(
+                stringResource(R.string.recent_places_title),
+                modifier = Modifier.semantics { heading() },
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            // On screen "Clear" is enough under its heading; read aloud it needs to say what, as the search bar has a Clear too.
+            val clearLabel = stringResource(R.string.recent_places_clear_label)
+            TextButton(onClick = onClear, modifier = Modifier.semantics { contentDescription = clearLabel }) {
+                Text(stringResource(R.string.recent_places_clear))
+            }
         }
         places.forEach { place ->
             HorizontalDivider()
@@ -475,10 +501,21 @@ private fun Header(state: UiState, compact: Boolean, onOpenAbout: () -> Unit) {
         val antipode = state.antipode
         if (country != null && antipode != null) {
             val ocean = state.showingOcean
-            val title = if (ocean) "🌊 ${oceanAt(antipode).text()}" else "${flagEmoji(country.iso)} ${country.name}"
+            val name = if (ocean) oceanAt(antipode).text() else country.name
+            val title = if (ocean) "🌊 $name" else "${flagEmoji(country.iso)} $name"
             // Each line is one line, and both views use the same text for the open-water note, so switching
             // between them can't change the header's height.
-            Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            // Read aloud without the emoji, which would come out as "flag: New Zealand, New Zealand".
+            Text(
+                title,
+                modifier = Modifier.semantics {
+                    heading()
+                    contentDescription = name
+                },
+                style = MaterialTheme.typography.titleLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
             val place = state.originLabel?.substringBefore(",")?.trim()
             val time = localTimeThere(antipode)
             Text(
@@ -526,7 +563,11 @@ private fun OceanCard(state: UiState) {
     val antipode = state.antipode ?: return
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(stringResource(R.string.ocean_card_title), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.ocean_card_title),
+                modifier = Modifier.semantics { heading() },
+                style = MaterialTheme.typography.titleMedium,
+            )
             Text(sunDescription(antipode), style = MaterialTheme.typography.bodyMedium)
             HorizontalDivider()
             val marine = state.marine
@@ -561,7 +602,8 @@ private fun MarineRows(marine: MarineConditions) {
 
 @Composable
 private fun Fact(label: String, value: String, detail: String?) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    // One stop for a screen reader, so the value is read with its label.
+    Column(modifier = Modifier.semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(label, style = MaterialTheme.typography.bodyMedium)
             Text(value, style = MaterialTheme.typography.titleMedium)
@@ -580,8 +622,14 @@ private fun RecencyHeading(recency: Recency) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
+        val label = recency.text()
         Text(
-            recency.text().uppercase(),
+            label.uppercase(),
+            // Capitals are for the eye; read aloud they can be spelled out letter by letter.
+            modifier = Modifier.semantics {
+                heading()
+                contentDescription = label
+            },
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.tertiary,
             fontWeight = FontWeight.Bold,

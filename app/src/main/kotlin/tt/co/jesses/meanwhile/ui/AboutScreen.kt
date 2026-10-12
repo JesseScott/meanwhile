@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -32,6 +33,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.oss.licenses.v2.OssLicensesMenuActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -62,7 +67,11 @@ fun AboutScreen(locationAccess: LocationAccess, onTurnOnLocation: () -> Unit, on
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.about_back))
             }
-            Text(stringResource(R.string.about_title), style = MaterialTheme.typography.headlineSmall)
+            Text(
+                stringResource(R.string.about_title),
+                modifier = Modifier.semantics { heading() },
+                style = MaterialTheme.typography.headlineSmall,
+            )
         }
         HorizontalDivider()
 
@@ -174,15 +183,19 @@ fun AboutScreen(locationAccess: LocationAccess, onTurnOnLocation: () -> Unit, on
 @Composable
 private fun Section(title: String, content: @Composable () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(title, style = MaterialTheme.typography.titleLarge)
+        Text(title, modifier = Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
         content()
     }
 }
 
 @Composable
 private fun SwitchRow(title: String, detail: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    // The whole row is the switch: one stop for a screen reader, which reads the title with "on" or "off",
+    // and a tap anywhere on it works.
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -190,7 +203,7 @@ private fun SwitchRow(title: String, detail: String, checked: Boolean, onChecked
             Text(title, style = MaterialTheme.typography.titleMedium)
             Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 
@@ -202,7 +215,8 @@ private fun Body(text: String) {
 @Composable
 private fun Bullet(text: String) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("•", style = MaterialTheme.typography.bodyMedium)
+        // Decoration: without this a screen reader stops on every dot and says "bullet".
+        Text("•", modifier = Modifier.clearAndSetSemantics {}, style = MaterialTheme.typography.bodyMedium)
         Text(text, style = MaterialTheme.typography.bodyMedium)
     }
 }
