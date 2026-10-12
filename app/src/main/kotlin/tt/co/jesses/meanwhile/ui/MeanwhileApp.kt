@@ -15,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -212,7 +213,10 @@ fun MeanwhileApp(viewModel: MainViewModel) {
                     onOpenSettings = openAppSettings,
                 )
             }
-            SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
+            // The action goes under the message: side by side, large text squeezes the message into a thin column.
+            CappedFontScale {
+                SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter)) { Snackbar(it, actionOnNewLine = true) }
+            }
         }
     }
 }

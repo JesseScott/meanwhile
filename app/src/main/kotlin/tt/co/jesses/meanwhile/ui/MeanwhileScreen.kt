@@ -158,18 +158,21 @@ fun MeanwhileScreen(
                     .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Header(state, onOpenAbout)
-                if (state.antipodeIsWater) ModeSwitch(state.mode) { onEvent(UiEvent.SetMode(it)) }
-                SearchBar(
-                    query = query,
-                    onQueryChange = { query = it },
-                    onFocusChange = { searchFocused = it },
-                    places = state.searchResults,
-                    onSearch = { onEvent(UiEvent.Search(it)) },
-                    onPick = { onEvent(UiEvent.PickPlace(it)) },
-                    onDismissPlaces = { onEvent(UiEvent.DismissPlaces) },
-                    onUseLocation = onUseLocation,
-                )
+                // Text here stops growing at 1.5x, so the largest settings don't hand half the screen to the header.
+                CappedFontScale {
+                    Header(state, onOpenAbout)
+                    if (state.antipodeIsWater) ModeSwitch(state.mode) { onEvent(UiEvent.SetMode(it)) }
+                    SearchBar(
+                        query = query,
+                        onQueryChange = { query = it },
+                        onFocusChange = { searchFocused = it },
+                        places = state.searchResults,
+                        onSearch = { onEvent(UiEvent.Search(it)) },
+                        onPick = { onEvent(UiEvent.PickPlace(it)) },
+                        onDismissPlaces = { onEvent(UiEvent.DismissPlaces) },
+                        onUseLocation = onUseLocation,
+                    )
+                }
             }
         }
         // A fixed-height strip: the rule under the header, with a thin progress bar over it while anything loads.
@@ -293,7 +296,10 @@ private fun ModeSwitch(mode: ViewMode, onSetMode: (ViewMode) -> Unit) {
                     activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     activeBorderColor = MaterialTheme.colorScheme.primary,
                 ),
-            ) { Text(stringResource(label)) }
+                // No checkmark: the colour already marks the choice, and the icon's width made large labels wrap,
+                // which grew the header.
+                icon = {},
+            ) { Text(stringResource(label), maxLines = 1, overflow = TextOverflow.Ellipsis) }
         }
     }
 }
