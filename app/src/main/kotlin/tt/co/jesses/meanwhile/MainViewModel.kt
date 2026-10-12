@@ -188,7 +188,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private fun search(query: String) {
         if (query.isBlank()) return
         viewModelScope.launch {
-            val results = geocoding.search(query.trim())
+            // A search that couldn't be made is not a search that found nothing.
+            val results = try {
+                geocoding.search(query.trim())
+            } catch (e: GeocoderUnavailableException) {
+                _state.update { it.copy(searchResults = emptyList(), notice = UiNotice.SearchFailed) }
+                return@launch
+            }
             _state.update {
                 it.copy(
                     searchResults = results,
@@ -328,6 +334,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 },
                 newsCountry,
             )
+        } catch (e: GeocoderUnavailableException) {
+            // Nearly always no connection, so nothing to report as a crash, and never "no land near your antipode".
+            AppLog.w(TAG, "load failed after ${(System.nanoTime() - loadStart) / 1_000_000} ms: ${e.message}")
+            fail(kind, UiError.Offline, newsCountry)
         } catch (e: Exception) {
             AppLog.e(TAG, "load failed after ${(System.nanoTime() - loadStart) / 1_000_000} ms", e)
             // An unexpected failure: worth a crash report, which carries only the type and stack frames, not the message.

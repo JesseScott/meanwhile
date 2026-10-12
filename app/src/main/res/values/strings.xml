@@ -33,6 +33,8 @@
     <!-- Notices: something worth saying that doesn't replace what is on screen. -->
     <!-- %1$s is what the user typed into the search bar. -->
     <string name="notice_no_places">No places found for \"%1$s\".</string>
+    <!-- The search couldn't be made at all, usually because there is no connection. -->
+    <string name="notice_search_failed">Couldn\'t search right now. Check your connection and try again.</string>
     <string name="notice_location_denied">Location is off for Meanwhile. Search for a place, or turn it on in your phone\'s settings.</string>
     <!-- A refresh failed, so the headlines loaded earlier stay on screen. -->
     <string name="notice_refresh_failed">Couldn\'t refresh. Showing what we had.</string>
