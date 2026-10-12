@@ -54,6 +54,7 @@ fun UiNotice.text(): String = when (this) {
     is UiNotice.NoPlaces -> stringResource(R.string.notice_no_places, query)
     UiNotice.LocationDenied -> stringResource(R.string.notice_location_denied)
     UiNotice.RefreshFailed -> stringResource(R.string.notice_refresh_failed)
+    UiNotice.SearchFailed -> stringResource(R.string.notice_search_failed)
 }
 
 /** The Location row on the About screen: its detail line, and the button that turns location on (none when it is on). */

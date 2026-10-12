@@ -21,10 +21,17 @@ import tt.co.jesses.meanwhile.core.fipsFor
 import tt.co.jesses.meanwhile.core.haversineKm
 import java.io.IOException
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.roundToInt
 import kotlin.coroutines.resume
 
 data class NamedPlace(val label: String, val point: LatLon)
+
+/**
+ * The geocoder gave no answer: an error, a timeout, most often no connection. Not the same as an answer with nothing
+ * in it, which means open water (for a point) or no such place (for a search).
+ */
+class GeocoderUnavailableException(message: String) : IOException(message)
 
 private const val TAG = "Meanwhile"
 private const val GEOCODER_TIMEOUT_MS = 8_000L
@@ -36,7 +43,7 @@ class Geocoding(context: Context) {
         AppLog.d(TAG, "Geocoder.isPresent=${Geocoder.isPresent()} sdk=${Build.VERSION.SDK_INT}")
     }
 
-    /** ISO country code of the land at [point], or null over open water or when geocoding fails. */
+    /** ISO country code of the land at [point], or null over open water. Throws [GeocoderUnavailableException] when geocoding fails. */
     suspend fun countryAt(point: LatLon): String? {
         val start = System.nanoTime()
         val iso = lookup(point.lat, point.lon).firstOrNull()?.countryCode?.uppercase()
@@ -45,6 +52,7 @@ class Geocoding(context: Context) {
         return iso
     }
 
+    /** Places matching [query], or none when there is no such place. Throws [GeocoderUnavailableException] when geocoding fails. */
     suspend fun search(query: String): List<NamedPlace> {
         val start = System.nanoTime()
         val addresses = searchByName(query)
@@ -69,26 +77,23 @@ class Geocoding(context: Context) {
         }
         return if (Build.VERSION.SDK_INT >= 33) {
             withTimeoutOrNull(GEOCODER_TIMEOUT_MS) {
-                suspendCancellableCoroutine { cont ->
+                suspendCancellableCoroutine<List<Address>?> { cont ->
                     geocoder.getFromLocation(lat, lon, 1, object : Geocoder.GeocodeListener {
                         override fun onGeocode(addresses: MutableList<Address>) = cont.resume(addresses)
                         override fun onError(errorMessage: String?) {
                             AppLog.w(TAG, "geocoder error: $errorMessage")
-                            cont.resume(emptyList())
+                            cont.resume(null)
                         }
                     })
                 }
-            } ?: run {
-                AppLog.w(TAG, "geocoder timed out after $GEOCODER_TIMEOUT_MS ms")
-                emptyList()
-            }
+            } ?: throw GeocoderUnavailableException("geocoder gave no answer")
         } else {
             withContext(Dispatchers.IO) {
                 try {
                     @Suppress("DEPRECATION")
                     geocoder.getFromLocation(lat, lon, 1).orEmpty()
                 } catch (e: IOException) {
-                    emptyList()
+                    throw GeocoderUnavailableException("geocoder failed")
                 }
             }
         }
@@ -101,26 +106,23 @@ class Geocoding(context: Context) {
         }
         return if (Build.VERSION.SDK_INT >= 33) {
             withTimeoutOrNull(GEOCODER_TIMEOUT_MS) {
-                suspendCancellableCoroutine { cont ->
+                suspendCancellableCoroutine<List<Address>?> { cont ->
                     geocoder.getFromLocationName(query, 5, object : Geocoder.GeocodeListener {
                         override fun onGeocode(addresses: MutableList<Address>) = cont.resume(addresses)
                         override fun onError(errorMessage: String?) {
                             AppLog.w(TAG, "geocoder search error: $errorMessage")
-                            cont.resume(emptyList())
+                            cont.resume(null)
                         }
                     })
                 }
-            } ?: run {
-                AppLog.w(TAG, "geocoder search timed out after $GEOCODER_TIMEOUT_MS ms")
-                emptyList()
-            }
+            } ?: throw GeocoderUnavailableException("geocoder search gave no answer")
         } else {
             withContext(Dispatchers.IO) {
                 try {
                     @Suppress("DEPRECATION")
                     geocoder.getFromLocationName(query, 5).orEmpty()
                 } catch (e: IOException) {
-                    emptyList()
+                    throw GeocoderUnavailableException("geocoder failed")
                 }
             }
         }
@@ -150,6 +152,18 @@ class AntipodeResolver(private val geocoding: Geocoding) {
     suspend fun resolve(antipode: LatLon, exclude: Set<String> = emptySet()): ResolvedCountry? {
         val skip = NO_COVERAGE_ISO + exclude
         AppLog.d(TAG, "resolving antipode (${"%.3f".format(antipode.lat)}, ${"%.3f".format(antipode.lon)}), skipping $skip")
+        // The first lookup is allowed to throw: with no geocoder there is no point trying a hundred more points.
+        // After that a point that fails counts as water, but is remembered, so "found nothing" isn't taken for
+        // "there is nothing" (see the end).
+        val failures = AtomicInteger()
+        val countryAt: suspend (LatLon) -> String? = { point ->
+            try {
+                geocoding.countryAt(point)
+            } catch (e: GeocoderUnavailableException) {
+                failures.incrementAndGet()
+                null
+            }
+        }
         geocoding.countryAt(antipode)?.takeIf { it !in skip }?.let { iso -> toResolved(iso, 0.0)?.let { return it } }
         AppLog.d(TAG, "antipode is not on usable land, searching outward for the nearest country")
 
@@ -158,7 +172,7 @@ class AntipodeResolver(private val geocoding: Geocoding) {
             AppLog.d(TAG, "ring ${ring.radiusKm.roundToInt()} km: geocoding ${ring.points.size} points")
             val hits = coroutineScope {
                 ring.points
-                    .mapIndexed { i, p -> async { geocoding.countryAt(p)?.let { iso -> Hit(iso, haversineKm(antipode, p), i) } } }
+                    .mapIndexed { i, p -> async { countryAt(p)?.let { iso -> Hit(iso, haversineKm(antipode, p), i) } } }
                     .awaitAll()
                     .filterNotNull()
                     .filter { it.iso !in skip }
@@ -172,7 +186,7 @@ class AntipodeResolver(private val geocoding: Geocoding) {
             var best: Triple<String, Double, Hit>? = null
             for (hit in candidates) {
                 val bearing = hit.pointIndex * 360.0 / ring.points.size
-                val (refinedIso, km) = refine(antipode, bearing, inner, ring.radiusKm, skip)
+                val (refinedIso, km) = refine(antipode, bearing, inner, ring.radiusKm, skip, countryAt)
                 val iso = refinedIso ?: hit.iso
                 AppLog.d(TAG, "bearing ${bearing.roundToInt()}°: $iso at about ${km.roundToInt()} km")
                 if (best == null || km < best.second) best = Triple(iso, km, hit)
@@ -180,6 +194,8 @@ class AntipodeResolver(private val geocoding: Geocoding) {
             val (iso, km, hit) = best ?: continue
             (toResolved(iso, km) ?: toResolved(hit.iso, hit.distanceKm))?.let { return it }
         }
+        // Unknown is not the same as empty: if lookups failed along the way, the land may be there all the same.
+        if (failures.get() > 0) throw GeocoderUnavailableException("${failures.get()} lookups failed and no land was found")
         AppLog.w(TAG, "no land found within ${DEFAULT_SEARCH_RADII_KM.last().roundToInt()} km of the antipode")
         return null
     }
@@ -191,10 +207,17 @@ class AntipodeResolver(private val geocoding: Geocoding) {
         hits.groupBy { it.iso }.values.flatMap { it.take(2) }.take(MAX_CANDIDATES)
 
     /** Checks a handful of points between two rings, in parallel, along the bearing where land was found. */
-    private suspend fun refine(antipode: LatLon, bearingDeg: Double, innerKm: Double, outerKm: Double, skip: Set<String>): Pair<String?, Double> {
+    private suspend fun refine(
+        antipode: LatLon,
+        bearingDeg: Double,
+        innerKm: Double,
+        outerKm: Double,
+        skip: Set<String>,
+        countryAt: suspend (LatLon) -> String?,
+    ): Pair<String?, Double> {
         val probes = probesAlong(antipode, bearingDeg, innerKm, outerKm)
         val land = coroutineScope {
-            probes.map { p -> async { geocoding.countryAt(p.point)?.takeIf { it !in skip } } }.awaitAll()
+            probes.map { p -> async { countryAt(p.point)?.takeIf { it !in skip } } }.awaitAll()
         }
         val km = estimateCoastKm(innerKm, outerKm, probes.map { it.distanceKm }, land.map { it != null })
         // The first probe to find land may be a different country from the ring's hit; if none did, the ring's stands.

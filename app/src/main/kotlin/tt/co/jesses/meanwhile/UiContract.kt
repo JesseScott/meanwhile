@@ -36,6 +36,8 @@ sealed interface UiNotice {
     data class NoPlaces(val query: String) : UiNotice
     data object LocationDenied : UiNotice
     data object RefreshFailed : UiNotice
+    /** The search itself couldn't be made (no connection, usually), as opposed to finding no such place. */
+    data object SearchFailed : UiNotice
 }
 
 data class UiState(
