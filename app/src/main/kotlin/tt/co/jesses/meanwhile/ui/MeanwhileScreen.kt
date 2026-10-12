@@ -9,6 +9,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.window.PopupProperties
 import androidx.compose.foundation.layout.width
@@ -113,6 +114,9 @@ import java.time.format.DateTimeFormatter
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
+/** Screens shorter than this (small phones, landscape) get a shorter header: no tagline, and a one-line note. */
+private const val SHORT_SCREEN_DP = 700
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MeanwhileScreen(
@@ -142,7 +146,8 @@ fun MeanwhileScreen(
         // The part that stays put. It only ever holds things whose size doesn't depend on what is loading:
         // the place (one line each), the view switch, and the search bar. Messages, errors and progress text
         // live in the list below, so nothing here moves when a load starts or finishes. With big text or a small
-        // screen it would fill the phone, so it is capped and scrolls on its own.
+        // screen it would fill the phone, so it is capped: the lines above the search bar scroll on their own, and
+        // the search bar stays in view whatever happens.
         Box(Modifier.fillMaxWidth()) {
             // The country's flag as a faint wash behind it all. It matches the column's size and never sets it,
             // and there is none over the sea, before a country is known, or when it is turned off in About.
@@ -150,18 +155,24 @@ fun MeanwhileScreen(
                 iso = state.country?.iso?.takeIf { showFlagWash && state.antipode != null && !state.showingOcean },
                 modifier = Modifier.matchParentSize(),
             )
+            // The screen's height, not the window's, so the header doesn't change when the keyboard opens.
+            val shortScreen = LocalConfiguration.current.screenHeightDp < SHORT_SCREEN_DP
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = this@BoxWithConstraints.maxHeight * 0.5f)
-                    .verticalScroll(rememberScrollState())
                     .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 // Text here stops growing at 1.5x, so the largest settings don't hand half the screen to the header.
                 CappedFontScale {
-                    Header(state, onOpenAbout)
-                    if (state.antipodeIsWater) ModeSwitch(state.mode) { onEvent(UiEvent.SetMode(it)) }
+                    Column(
+                        modifier = Modifier.fillMaxWidth().weight(1f, fill = false).verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Header(state, compact = shortScreen, onOpenAbout = onOpenAbout)
+                        if (state.antipodeIsWater) ModeSwitch(state.mode) { onEvent(UiEvent.SetMode(it)) }
+                    }
                     SearchBar(
                         query = query,
                         onQueryChange = { query = it },
@@ -438,7 +449,7 @@ private val MyLocationIcon: ImageVector by lazy {
 }
 
 @Composable
-private fun Header(state: UiState, onOpenAbout: () -> Unit) {
+private fun Header(state: UiState, compact: Boolean, onOpenAbout: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         // The settings icon shares the title's row, so it lines up with "Meanwhile" and not with the middle of the
         // title and tagline together. The tagline sits under the whole row.
@@ -452,12 +463,14 @@ private fun Header(state: UiState, onOpenAbout: () -> Unit) {
                 Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.header_open_about))
             }
         }
-        Text(
-            tagline(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.offset(y = (-8).dp),
-        )
+        if (!compact) {
+            Text(
+                tagline(),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.offset(y = (-8).dp),
+            )
+        }
         val country = state.country
         val antipode = state.antipode
         if (country != null && antipode != null) {
@@ -480,7 +493,7 @@ private fun Header(state: UiState, onOpenAbout: () -> Unit) {
                     openWaterNote(country),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
+                    maxLines = if (compact) 1 else 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
