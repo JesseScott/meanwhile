@@ -5,13 +5,17 @@ GitHub release; the signed bundle is built locally and attached.
 
 ## Cutting a release
 
-1. Branch from `main` and change `version.properties`:
-   - `versionCode` goes up by at least one for every upload to Google Play (Play rejects a repeat).
-   - `versionName` is what people see, in the form `1.2.3`.
+1. Branch from `main` and run `scripts/bump-version.sh`. It raises `versionCode` by one and the last part of
+   `versionName` by one in `version.properties` (`0.1.11` (11) becomes `0.1.12` (12)); give it a name to set that
+   instead, for example `scripts/bump-version.sh 0.2.0` (the code still goes up by one).
+   - `versionCode` goes up for every upload to Google Play (Play rejects a repeat).
+   - `versionName` is what people see, in the form `1.2.3`, and goes up with every release so each build can be told
+     apart (About shows both, as "Version 0.1.11 (11)"). For now the last part matches `versionCode`; every release up
+     to `v0.1.0-10` was `0.1.0`, so the first one after it is `scripts/bump-version.sh 0.1.11`.
 2. Update `docs/play-store/release-notes-en-US.txt` (the Play "What's new", 500 characters at most) if it should change.
 3. Open a pull request into `main`. CI runs the tests and builds a debug APK, and the **Version check** fails the PR
-   if `versionCode` is not higher than on `main`.
-4. Merge it. The **Release** workflow creates the tag `v<versionName>-<versionCode>` (for example `v0.1.0-2`) on the
+   if `versionCode` or `versionName` is not higher than on `main`.
+4. Merge it. The **Release** workflow creates the tag `v<versionName>-<versionCode>` (for example `v0.1.11-11`) on the
    merge commit and a GitHub release for it: the release notes file first, then GitHub's list of merged pull requests.
    Versions below 1.0 are marked as pre-releases.
 5. On your machine, with the upload key available (`keystore.properties`, vault unlocked):
