@@ -179,9 +179,8 @@
     <string name="about_version">Version %1$s</string>
     <!-- Used in place of the version number when it can't be read. -->
     <string name="about_version_unknown">unknown</string>
-    <!-- "Antipode" is the point on the exact opposite side of the Earth. -->
-    <string name="about_what_it_does">Meanwhile finds the point exactly opposite you on Earth, your antipode, and shows what is happening there: headlines from that country, or from the nearest land if the point is open water. When it is open water you can also look at the sea itself.</string>
-    <string name="about_hobby">A hobby project by Jesse Scott. It is free, has no ads, and isn\'t a business.</string>
+    <string name="about_what_it_does">Meanwhile shows what\'s happening on the exact opposite side of the Earth from you: headlines from the country there, or from the nearest land when it\'s open sea.</string>
+    <string name="about_hobby">A free hobby project by Jesse Scott.</string>
     <string name="about_link_site" translatable="false">jesses.co.tt</string>
 
     <string name="about_location_title">Location</string>
@@ -191,6 +190,9 @@
     <string name="about_flag_wash_title">Flag behind the header</string>
     <string name="about_flag_wash_detail">A faint wash of the country\'s flag colours</string>
 
+    <!-- Accessibility: whether a foldable About section (such as Privacy) is open or folded. -->
+    <string name="about_section_expanded">Expanded</string>
+    <string name="about_section_collapsed">Collapsed</string>
     <string name="about_sources_title">Where the data comes from</string>
     <!-- Names of projects, services and licences in this section are not translated. -->
     <string name="about_sources_headlines">Headlines: the GDELT Project (gdeltproject.org), a free, open database of world news, plus a few public news feeds from local outlets. Meanwhile shows article titles only and links to the publishers\' own sites. Titles appear as published, in their original language, and GDELT can occasionally file an outlet under the wrong country.</string>
@@ -221,7 +223,7 @@
     <string name="about_link_firebase">How Firebase handles data</string>
 
     <string name="about_support_title">Support</string>
-    <string name="about_support_body">This project is a labour of love. If you are able and willing to support my work, please buy me a coffee.</string>
+    <string name="about_support_body">If you\'d like to support Meanwhile, you can buy me a coffee.</string>
     <string name="about_support_button">Buy me a coffee</string>
 
     <string name="about_open_source_title">Open source</string>
