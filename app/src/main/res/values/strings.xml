@@ -76,6 +76,8 @@
     <string name="recent_places_title">Recent places</string>
     <!-- Button that empties the list of recent places. -->
     <string name="recent_places_clear">Clear</string>
+    <!-- Accessibility label for that button, which says what it clears. -->
+    <string name="recent_places_clear_label">Clear recent places</string>
 
     <!-- Main screen header. -->
     <!-- Accessibility label for the settings icon, which opens the About screen. -->
