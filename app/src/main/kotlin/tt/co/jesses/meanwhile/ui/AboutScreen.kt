@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.core.content.pm.PackageInfoCompat
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -91,7 +92,11 @@ fun AboutScreen(locationAccess: LocationAccess, onTurnOnLocation: () -> Unit, on
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             Section(stringResource(R.string.app_name)) {
-                Body(stringResource(R.string.about_version, versionName(context) ?: stringResource(R.string.about_version_unknown)))
+                val version = remember(context) { appVersion(context) }
+                Body(
+                    version?.let { (name, code) -> stringResource(R.string.about_version, name, code) }
+                        ?: stringResource(R.string.about_version_unknown),
+                )
                 Body(stringResource(R.string.about_what_it_does))
                 Body(stringResource(R.string.about_hobby))
                 LinkButton(stringResource(R.string.about_link_site), SITE_URL)
@@ -284,5 +289,8 @@ private fun openUrl(context: Context, url: String) {
     runCatching { CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(url)) }
 }
 
-private fun versionName(context: Context): String? =
-    runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull()
+/** The version name and build number (versionCode), or null if they can't be read. */
+private fun appVersion(context: Context): Pair<String, Long>? = runCatching {
+    val info = context.packageManager.getPackageInfo(context.packageName, 0)
+    info.versionName?.let { it to PackageInfoCompat.getLongVersionCode(info) }
+}.getOrNull()
