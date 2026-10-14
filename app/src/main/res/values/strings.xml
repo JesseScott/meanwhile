@@ -191,6 +191,9 @@
     <string name="about_flag_wash_title">Flag behind the header</string>
     <string name="about_flag_wash_detail">A faint wash of the country\'s flag colours</string>
 
+    <!-- Accessibility: whether a foldable About section (such as Privacy) is open or folded. -->
+    <string name="about_section_expanded">Expanded</string>
+    <string name="about_section_collapsed">Collapsed</string>
     <string name="about_sources_title">Where the data comes from</string>
     <!-- Names of projects, services and licences in this section are not translated. -->
     <string name="about_sources_headlines">Headlines: the GDELT Project (gdeltproject.org), a free, open database of world news, plus a few public news feeds from local outlets. Meanwhile shows article titles only and links to the publishers\' own sites. Titles appear as published, in their original language, and GDELT can occasionally file an outlet under the wrong country.</string>

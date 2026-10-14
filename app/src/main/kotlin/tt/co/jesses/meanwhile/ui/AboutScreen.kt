@@ -11,11 +11,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -27,6 +30,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.rotate
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -37,6 +44,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.oss.licenses.v2.OssLicensesMenuActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -117,24 +125,32 @@ fun AboutScreen(locationAccess: LocationAccess, onTurnOnLocation: () -> Unit, on
                 )
             }
 
-            Section(stringResource(R.string.about_sources_title)) {
-                Body(stringResource(R.string.about_sources_headlines))
-                LinkButton(stringResource(R.string.about_link_gdelt), "https://www.gdeltproject.org")
-                Body(stringResource(R.string.about_sources_sea))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    LinkButton(stringResource(R.string.about_link_open_meteo), "https://open-meteo.com")
-                    LinkButton(stringResource(R.string.about_link_cc_by), "https://creativecommons.org/licenses/by/4.0/")
-                }
-                Body(stringResource(R.string.about_sources_places))
-            }
+            // The two long sections start folded, so the screen isn't a wall of text at large sizes.
+            CollapsibleSection(
+                title = stringResource(R.string.about_sources_title),
+                details = {
+                    Body(stringResource(R.string.about_sources_headlines))
+                    LinkButton(stringResource(R.string.about_link_gdelt), "https://www.gdeltproject.org")
+                    Body(stringResource(R.string.about_sources_sea))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        LinkButton(stringResource(R.string.about_link_open_meteo), "https://open-meteo.com")
+                        LinkButton(stringResource(R.string.about_link_cc_by), "https://creativecommons.org/licenses/by/4.0/")
+                    }
+                    Body(stringResource(R.string.about_sources_places))
+                },
+            )
 
-            Section(stringResource(R.string.about_privacy_title)) {
-                Bullet(stringResource(R.string.about_privacy_location))
-                Bullet(stringResource(R.string.about_privacy_leaves_phone))
-                Bullet(stringResource(R.string.about_privacy_reports))
-                Bullet(stringResource(R.string.about_privacy_stored))
-                Bullet(stringResource(R.string.about_privacy_no_ads))
-
+            CollapsibleSection(
+                title = stringResource(R.string.about_privacy_title),
+                details = {
+                    Bullet(stringResource(R.string.about_privacy_location))
+                    Bullet(stringResource(R.string.about_privacy_leaves_phone))
+                    Bullet(stringResource(R.string.about_privacy_reports))
+                    Bullet(stringResource(R.string.about_privacy_stored))
+                    Bullet(stringResource(R.string.about_privacy_no_ads))
+                },
+            ) {
+                // The switch and the policy links stay in view when the section is folded.
                 // The saved choice is the only source of truth; the application turns collection on and off from it.
                 val choice by settings.analyticsChoice.collectAsStateWithLifecycle(initialValue = AnalyticsChoice.Unset)
                 SwitchRow(
@@ -185,6 +201,43 @@ private fun Section(title: String, content: @Composable () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(title, modifier = Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
         content()
+    }
+}
+
+/**
+ * A section whose [details] are folded away until its heading is tapped. [always] shows whatever the fold, under
+ * the details. The heading row is one control for a screen reader: a heading that says whether it is open.
+ */
+@Composable
+private fun CollapsibleSection(
+    title: String,
+    details: @Composable () -> Unit = {},
+    always: @Composable () -> Unit = {},
+) {
+    var expanded by rememberSaveable(title) { mutableStateOf(false) }
+    val state = stringResource(if (expanded) R.string.about_section_expanded else R.string.about_section_collapsed)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .clickable(role = Role.Button) { expanded = !expanded }
+                .semantics(mergeDescendants = true) {
+                    heading()
+                    stateDescription = state
+                },
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+            Icon(
+                Icons.Filled.KeyboardArrowDown,
+                contentDescription = null,
+                modifier = Modifier.rotate(if (expanded) 180f else 0f),
+            )
+        }
+        if (expanded) details()
+        always()
     }
 }
 
