@@ -2,6 +2,7 @@ package tt.co.jesses.meanwhile.ui
 
 import android.net.Uri
 import android.text.format.DateUtils
+import androidx.activity.compose.BackHandler
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.DropdownMenu
@@ -144,6 +145,8 @@ fun MeanwhileScreen(
     val listState = rememberLazyListState()
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = LocalFocusManager.current
+    // Back closes the list of matches first; without this it would leave the app with the list still open.
+    BackHandler(enabled = state.searchResults.isNotEmpty()) { onEvent(UiEvent.DismissPlaces) }
     // The list may be scrolled down when the bar is tapped; bring the recent places into view.
     LaunchedEffect(showRecent) { if (showRecent) listState.scrollToItem(0) }
     BoxWithConstraints(Modifier.fillMaxSize()) {

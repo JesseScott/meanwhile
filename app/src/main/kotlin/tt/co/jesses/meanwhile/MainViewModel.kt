@@ -2,6 +2,7 @@ package tt.co.jesses.meanwhile
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
@@ -62,7 +63,7 @@ private fun LoadKind.telemetryName() = when (this) {
     LoadKind.Refresh -> LoadKindName.Refresh
 }
 
-class MainViewModel(app: Application) : AndroidViewModel(app) {
+class MainViewModel(app: Application, private val saved: SavedStateHandle) : AndroidViewModel(app) {
     init {
         Trace.sink = { AppLog.d(TAG, it) }
     }
@@ -110,6 +111,27 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private var origin: LatLon? = null
     private var originLabel: String? = null
 
+    init {
+        // Android can end the app's process while it is in the background. On the way back, pick up the searched
+        // place that was showing instead of starting from nothing.
+        val label = saved.get<String>(SAVED_LABEL)
+        val lat = saved.get<Double>(SAVED_LAT)
+        val lon = saved.get<Double>(SAVED_LON)
+        if (label != null && lat != null && lon != null) {
+            loadJob = viewModelScope.launch { loadFor(LatLon(lat, lon), label, LoadKind.NewPlace) }
+        }
+    }
+
+    /**
+     * Remembers the place on screen across the process being ended, or forgets it. Only a searched place is kept
+     * (it is in the recent places anyway). The phone's own location is never saved: it is asked for again.
+     */
+    private fun remember(place: NamedPlace?) {
+        saved[SAVED_LABEL] = place?.label
+        saved[SAVED_LAT] = place?.point?.lat
+        saved[SAVED_LON] = place?.point?.lon
+    }
+
     fun onEvent(event: UiEvent) {
         when (event) {
             UiEvent.UseMyLocation -> useDeviceLocation()
@@ -125,6 +147,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun useDeviceLocation() {
         loadJob?.cancel()
+        remember(null)
         // Asking for the phone's location means leaving the place on screen, so it goes straight away. Otherwise a
         // failed lookup would leave the last place in the header under an error about something else.
         _state.update {
@@ -163,6 +186,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(searchResults = emptyList()) }
         telemetry.log(TelemetryEvent.PlaceChosen(PlaceSource.Search))
         viewModelScope.launch { settings.addRecentPlace(RecentPlace(place.label, place.point.lat, place.point.lon)) }
+        remember(place)
         loadJob?.cancel()
         loadJob = viewModelScope.launch { loadFor(place.point, place.label, LoadKind.NewPlace) }
     }
@@ -381,5 +405,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         const val MAX_ARTICLES = 100
         const val MAX_COUNTRY_ATTEMPTS = 3
         const val ASK_DELAY_MS = 5_000L
+        const val SAVED_LABEL = "place_label"
+        const val SAVED_LAT = "place_lat"
+        const val SAVED_LON = "place_lon"
     }
 }
