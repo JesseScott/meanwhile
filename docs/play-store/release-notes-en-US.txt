@@ -1,9 +1,9 @@
-Meanwhile 0.1.0 (build 9)
+Meanwhile 0.1.0 (build 10)
 
 Thanks for testing!
 
-New: your last three searched places appear under the search bar. If you share anonymous usage reports, they now include the country of the headlines you load (never your exact location or what you searched for). Because that is new, the app asks again, and sends nothing until you answer.
+New: the country's flag washes softly behind the header. You can turn location on from About, and it opens settings if Android stops asking. About's data and privacy sections now fold away.
+
+Fixes: better with large text and screen readers; says so when you're offline; Back closes the search matches; a searched place stays put when Android closes the app.
 
 Try: location, search, ocean and land, pull to refresh, dark mode.
-
-Rough edges: small places can have few headlines; titles stay in their original language.
