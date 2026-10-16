@@ -175,10 +175,10 @@
     <!-- Accessibility label for the back arrow. -->
     <string name="about_back">Back</string>
     <string name="about_title">About</string>
-    <!-- %1$s is the app's version, such as "0.1.0". -->
-    <string name="about_version">Version %1$s</string>
-    <!-- Used in place of the version number when it can't be read. -->
-    <string name="about_version_unknown">unknown</string>
+    <!-- %1$s is the app's version, such as "0.1.11"; %2$d is its build number, such as 11. -->
+    <string name="about_version">Version %1$s (%2$d)</string>
+    <!-- Shown in place of the version line when the version can't be read. -->
+    <string name="about_version_unknown">Version unknown</string>
     <string name="about_what_it_does">Meanwhile shows what\'s happening on the exact opposite side of the Earth from you: headlines from the country there, or from the nearest land when it\'s open sea.</string>
     <string name="about_hobby">A free hobby project by Jesse Scott.</string>
     <string name="about_link_site" translatable="false">jesses.co.tt</string>
