@@ -85,14 +85,6 @@ dependencies {
     // Built-in Kotlin (AGP 9) does not pick the JUnit flavour of kotlin-test by itself, as the kotlin-android plugin did.
     testImplementation(libs.kotlin.test.junit)
 
-    // Ktor's OkHttp engine pulls OkHttp 5.5, which needs compileSdk 37 (and so AGP 9). Hold it
-    // back until the project moves to AGP 9.
-    constraints {
-        implementation("com.squareup.okhttp3:okhttp") {
-            version { strictly("5.1.0") }
-        }
-    }
-
     implementation(project(":core"))
 
     implementation(libs.androidx.core.ktx)
