@@ -2,7 +2,6 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.androidApplication)
-    alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.composeCompiler)
     id("com.google.android.gms.oss-licenses-plugin")
 }
@@ -34,7 +33,7 @@ base.archivesName.set("meanwhile-$appVersionName-$appVersionCode")
 
 android {
     namespace = "tt.co.jesses.meanwhile"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "tt.co.jesses.meanwhile"
@@ -83,7 +82,8 @@ kotlin {
 }
 
 dependencies {
-    testImplementation(libs.kotlin.test)
+    // Built-in Kotlin (AGP 9) does not pick the JUnit flavour of kotlin-test by itself, as the kotlin-android plugin did.
+    testImplementation(libs.kotlin.test.junit)
 
     // Ktor's OkHttp engine pulls OkHttp 5.5, which needs compileSdk 37 (and so AGP 9). Hold it
     // back until the project moves to AGP 9.
