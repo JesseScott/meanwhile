@@ -73,18 +73,62 @@ a day), small (the app fetches every feed for a country on each load, so nothing
   Guardian, EWN, CBC, Mmegi, Peru21, Biobio, Emol, Pagina12, Primicias, La Republica Peru, Le Mauricien, lexpress.mu.
 - *Not country news:* the generic SBS feed (stale), Infobae Argentina (empty), El Espectador (comments only), The Rio Times.
 
-## 3. What this does not tell us
+## 3. What GDELT has for the same places
 
-**GDELT itself was not surveyed.** The plan was to ask GDELT for the same countries (one request every 2.5 minutes, 7 day
-window, raw answers saved) and run the app's own cleaning over them, to find which countries are thin or empty and which
-do not need feeds. This connection is blocked by GDELT (HTTP 429 on every request, including after waiting 10 minutes
-twice), so no GDELT numbers were collected. An earlier overnight survey got 12 successes against 33 rate-limited answers.
-Rather than keep a blocked connection busy, the sampler was stopped. `gdelt_sample.py` is ready to run from a different
-network and resumes where it left off.
+*Sampled 2026-10-10 to 2026-10-11 with `gdelt_sample.py 150`.*
 
-Until then, the feeds are insurance for the shortlist rather than a response to measured gaps. The cost is small (a few
-tens of kilobytes per load, skipped when GDELT already has enough), but it does mean some of these countries probably did
-not need them.
+The first attempt, on 2026-10-04, got HTTP 429 on every request, so GDELT was sampled again a week later. The sampler
+asks for one country at a time (`sourcecountry:<FIPS>`, 7 day window, up to 250 articles), waits 2.5 minutes between
+countries and 10 minutes after a 429, and gives up on a country after four tries. It took three passes over about 24
+hours: **92 of 116 requests were refused with 429**, and only 4 countries answered on the first try. Australia never
+answered (12 refusals in a row across the three passes, while other countries got through in between).
+
+The counts are GDELT's raw answers, before the app's cleaning (blocklist, language fit, noise rules), so they are an upper
+bound on what the app would show.
+
+| Country | Articles (7 days) | Domains | Biggest domains |
+| --- | ---: | ---: | --- |
+| New Zealand | 8 | 4 | home.nzcity.co.nz 3, nzherald.co.nz 2, itbrief.co.nz 2 |
+| Peru | 6 | 4 | larepublica.pe 3, rpp.pe 1, diariocorreo.pe 1 |
+| Australia | no answer | | HTTP 429 every time |
+| Argentina | 28 | 13 | argentinastar.com 5, lanacion.com.ar 4, tn.com.ar 4 |
+| Brazil | 128 | 12 | g1.globo.com 103, estadao.com.br 8, arede.info 5 |
+| French Polynesia | 0 | 0 | |
+| Mauritius | 3 | 2 | defimedia.info 2, 5plus.mu 1 |
+| Japan | 59 | 12 | ascii.jp 23, hokkoku.co.jp 9, nikkei.com 8 |
+| Colombia | 27 | 7 | elheraldo.co 11, lapatria.com 9, eltiempo.com 3 |
+| Chile | 22 | 4 | diariolongino.cl 10, 24horas.cl 8, elmostrador.cl 3 |
+| Uruguay | 6 | 3 | elpais.com.uy 2, ladiaria.com.uy 2, bitacora.com.uy 2 |
+| China | 250 (cap) | 56 | 163.com 24, baijiahao.baidu.com 22, tech.ifeng.com 17 |
+| Indonesia | 92 | 17 | cnnindonesia.com 15, koran-jakarta.com 13, jawapos.com 12 |
+| Madagascar | 13, none usable | 1 | storm.mg 13 (Taiwanese, already blocklisted) |
+| United States of America | 250 (cap) | 99 | boredpanda.com 16, atlantamagazine.com 15, tomsguide.com 10 |
+| Ecuador | 0 | 0 | |
+| Reunion (France) | 0 | 0 | |
+| Cambodia | 0 | 0 | |
+| Morocco | 0 | 0 | |
+| Canada | 53 | 19 | saultstar.com 12, thesudburystar.com 10, therecord.com 4 |
+| Philippines | 20 | 5 | rappler.com 6, bworldonline.com 4, shangbao.com.ph 4 |
+| Spain | 192 | 33 | heraldo.es 33, lavozdegalicia.es 21, diariovasco.com 15 |
+| Botswana | 0 | 0 | |
+| South Africa | 12 | 5 | citizen.co.za 6, timeslive.co.za 2, it-online.co.za 2 |
+| Fiji | 5 | 2 | fijivillage.com 3, pina.com.fj 2 |
+
+Tuvalu, the Cook Islands, Kiribati and Bermuda were not sampled. Fiji was, though it is not in the landing table.
+
+What it shows:
+- **Most of the shortlist is thin or empty in GDELT.** Six countries came back empty (French Polynesia, Ecuador, Reunion,
+  Cambodia, Morocco, Botswana), Madagascar has nothing usable once storm.mg is removed, and five more had under ten
+  articles in a week (Mauritius, Fiji, Uruguay, Peru, New Zealand). With Australia unanswered, that is most of the
+  "English markets" share, so the backup feeds are doing real work, not just insurance.
+- **Where GDELT has volume, one outlet often dominates.** g1.globo.com is 103 of Brazil's 128, Madagascar is a single
+  misfiled site, and Chile and Colombia are mostly two papers each.
+- **GDELT covers a few countries well:** China, the United States, Spain, Indonesia, Japan and Canada. Their feeds are
+  skipped when GDELT already has enough, so they cost little.
+- **GDELT is slow to answer, not just unreliable.** A country often needed two or three 10-minute waits, which is why the
+  app stands down after a refusal and shows a recent cached answer first.
+
+One sample in one week, so read small counts as "thin", not as exact figures.
 
 ## 4. Countries not researched
 
@@ -98,5 +142,5 @@ covered by RNZ; Uruguay's neighbour Paraguay; Chile's and Peru's neighbour Boliv
 python tools/coverage-survey/landing.py          # the ranking
 python tools/coverage-survey/verify_feeds.py     # re-fetch recommended feeds (needs out/feeds/*.json)
 ./gradlew :core:test --tests '*LiveFeedsCheck*' -DliveFeeds=<path to out/feeds_verified.csv>
-python tools/coverage-survey/gdelt_sample.py 150 # slow and polite; from a connection GDELT has not blocked
+python tools/coverage-survey/gdelt_sample.py 150 # slow (hours); rerun to retry only countries that got no answer
 ```
