@@ -39,7 +39,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - name: versionCode goes up, versionName looks like a version
+      - name: versionCode and versionName both go up
         run: |
           base="origin/${{ github.base_ref }}"
           if git diff --quiet "$base"...HEAD -- version.properties; then
@@ -48,12 +48,27 @@ jobs:
           fi
           read_prop() { grep -E "^$2=" | head -n1 | cut -d= -f2- | tr -d '[:space:]'; }
           old_code=$(git show "$base:version.properties" | read_prop - versionCode)
+          old_name=$(git show "$base:version.properties" | read_prop - versionName)
           new_code=$(read_prop - versionCode < version.properties)
           new_name=$(read_prop - versionName < version.properties)
-          echo "versionCode: $old_code -> $new_code, versionName: $new_name"
+          echo "versionCode: $old_code -> $new_code, versionName: $old_name -> $new_name"
           if ! [[ "$new_code" =~ ^[0-9]+$ ]]; then echo "::error file=version.properties::versionCode must be a whole number"; exit 1; fi
           if ! [[ "$new_name" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo "::error file=version.properties::versionName must look like 1.2.3"; exit 1; fi
           if [ "$new_code" -le "$old_code" ]; then
             echo "::error file=version.properties::versionCode must be higher than on main ($old_code). Google Play rejects a repeat."
+            exit 1
+          fi
+          # Compare x.y.z field by field, as numbers (so 0.1.10 is above 0.1.9).
+          name_is_higher() {
+            local IFS=.
+            local -a a=($1) b=($2)
+            for i in 0 1 2; do
+              if (( 10#${a[i]:-0} > 10#${b[i]:-0} )); then return 0; fi
+              if (( 10#${a[i]:-0} < 10#${b[i]:-0} )); then return 1; fi
+            done
+            return 1
+          }
+          if ! name_is_higher "$new_name" "$old_name"; then
+            echo "::error file=version.properties::versionName must go up with every release (main has $old_name) so each build can be told apart."
             exit 1
           fi
