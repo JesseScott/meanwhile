@@ -1,9 +1,7 @@
-Meanwhile 0.1.0 (build 10)
+Meanwhile 0.1.11 (build 11)
 
 Thanks for testing!
 
-New: the country's flag washes softly behind the header. You can turn location on from About, and it opens settings if Android stops asking. About's data and privacy sections now fold away.
-
-Fixes: better with large text and screen readers; says so when you're offline; Back closes the search matches; a searched place stays put when Android closes the app.
+New: About shows the version and build, so you can tell which one you have. Under the hood, updated libraries and a newer networking stack.
 
 Try: location, search, ocean and land, pull to refresh, dark mode.
