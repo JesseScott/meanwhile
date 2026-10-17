@@ -2,7 +2,6 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.androidApplication)
-    alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.composeCompiler)
     id("com.google.android.gms.oss-licenses-plugin")
 }
@@ -26,7 +25,7 @@ val keystoreProperties = Properties().apply {
 }
 
 // The version comes from version.properties, so the AAB's file name always matches what is inside it
-// (app/build/outputs/bundle/release/meanwhile-0.1.0-1-release.aab). Bump versionCode (in version.properties) for every Play upload.
+// (app/build/outputs/bundle/release/meanwhile-0.1.11-11-release.aab). Run scripts/bump-version.sh for every release.
 val versionProperties = Properties().apply { rootProject.file("version.properties").inputStream().use { load(it) } }
 val appVersionName: String = versionProperties.getProperty("versionName")
 val appVersionCode: Int = versionProperties.getProperty("versionCode").toInt()
@@ -34,7 +33,7 @@ base.archivesName.set("meanwhile-$appVersionName-$appVersionCode")
 
 android {
     namespace = "tt.co.jesses.meanwhile"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "tt.co.jesses.meanwhile"
@@ -83,15 +82,8 @@ kotlin {
 }
 
 dependencies {
-    testImplementation(libs.kotlin.test)
-
-    // Ktor's OkHttp engine pulls OkHttp 5.5, which needs compileSdk 37 (and so AGP 9). Hold it
-    // back until the project moves to AGP 9.
-    constraints {
-        implementation("com.squareup.okhttp3:okhttp") {
-            version { strictly("5.1.0") }
-        }
-    }
+    // Built-in Kotlin (AGP 9) does not pick the JUnit flavour of kotlin-test by itself, as the kotlin-android plugin did.
+    testImplementation(libs.kotlin.test.junit)
 
     implementation(project(":core"))
 

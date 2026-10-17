@@ -11,8 +11,8 @@ SHOTS = [
     ("about-privacy.png", "Private by default", "private", LIGHT),
 ]
 # The raw captures include the emulator's status bar (clock, battery), which the frame's rounded corners would clip.
-# Crop it off (CROP_TOP of the 2400 px height) and give the screen a little padding in the app's own colour instead.
-CROP_TOP = 96
+# Crop it off (CROP_TOP of the 2424 px height, Pixel 10 emulator) and give the screen a little padding in the app's own colour instead.
+CROP_TOP = 142
 PAD_TOP = 34
 
 TEMPLATE = """<!DOCTYPE html>

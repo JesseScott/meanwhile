@@ -1,9 +1,7 @@
-Meanwhile 0.1.0 (build 9)
+Meanwhile 0.1.11 (build 11)
 
 Thanks for testing!
 
-New: your last three searched places appear under the search bar. If you share anonymous usage reports, they now include the country of the headlines you load (never your exact location or what you searched for). Because that is new, the app asks again, and sends nothing until you answer.
+New: About shows the version and build, so you can tell which one you have. Under the hood, updated libraries and a newer networking stack.
 
 Try: location, search, ocean and land, pull to refresh, dark mode.
-
-Rough edges: small places can have few headlines; titles stay in their original language.

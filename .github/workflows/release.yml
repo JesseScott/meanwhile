@@ -1,7 +1,7 @@
 name: Release
 
 # When a merge to main changes version.properties, tag that commit and create a GitHub release for it.
-# The tag is v<versionName>-<versionCode>, the same as the AAB's file name (v0.1.0-2).
+# The tag is v<versionName>-<versionCode>, the same as the AAB's file name (v0.1.11-11).
 # The signed AAB is built on the maintainer's machine, where the upload key lives, and attached afterwards
 # with scripts/release.sh.
 on:

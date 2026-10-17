@@ -17,9 +17,6 @@ updates:
         update-types:
           - minor
           - patch
-    ignore:
-      # Held at 5.1.0 in app/build.gradle.kts: newer versions need compileSdk 37, and so AGP 9.
-      - dependency-name: "com.squareup.okhttp3:okhttp"
 
   - package-ecosystem: github-actions
     directory: /
