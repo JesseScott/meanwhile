@@ -18,7 +18,7 @@ there, when it is open water). Kotlin, Jetpack Compose, Android 8.0+. No account
 ./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug   # what CI runs
 ./gradlew :core:test --tests '*LiveFeedsCheck*' -DliveFeeds=<csv> # optional network check of feeds; no-op without the flag
 ```
-JDK 17. OkHttp is pinned to 5.1.0 in `:app` (newer versions need a newer compileSdk).
+JDK 17, Gradle 9 and AGP 9. AGP 9 compiles Kotlin itself, so `:app` has no `kotlin-android` plugin.
 
 ## Architecture
 - `:core` is plain Kotlin/JVM and holds everything testable: geometry, ISO-to-FIPS codes, news sources, cleaning rules,
