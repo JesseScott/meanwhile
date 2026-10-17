@@ -15,8 +15,8 @@ Ireland, Australia, New Zealand and South Africa, where the app's first users mo
 
 | Country | Share, all | Share, English markets | Typical km from land | Backup feeds now |
 | --- | ---: | ---: | ---: | --- |
-| New Zealand | 12.7% | 10.3% | 1261 | RNZ National, Stuff (English) |
-| Peru | 10.3% | 0.0% | 2081 | Andina in English and Spanish |
+| New Zealand | 12.7% | 10.3% | 1261 | RNZ National, Stuff, NZ Herald (English) |
+| Peru | 10.3% | 0.0% | 2081 | Andina in English and Spanish, Panamericana (Spanish) |
 | Australia | 10.2% | 42.7% | 1638 | ABC News, Sydney Morning Herald (English) |
 | Argentina | 8.7% | 0.0% | 0 | Buenos Aires Times (English), Clarin, Ambito |
 | Brazil | 8.0% | 0.0% | 769 | Agencia Brasil in English and Portuguese, Folha |

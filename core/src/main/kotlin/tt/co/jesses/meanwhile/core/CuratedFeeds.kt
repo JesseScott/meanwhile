@@ -29,7 +29,14 @@ val CURATED_FEEDS: Map<String, List<RssFeed>> = buildMap {
     )
 
     // Oceania: the antipode of most of western Europe, and of eastern North America
-    put("NZ", listOf(RssFeed("https://www.rnz.co.nz/rss/national.xml"), RssFeed("https://www.stuff.co.nz/rss"))) // English
+    put(
+        "NZ",
+        listOf(
+            RssFeed("https://www.rnz.co.nz/rss/national.xml"),
+            RssFeed("https://www.stuff.co.nz/rss"),
+            RssFeed("https://www.nzherald.co.nz/arc/outboundfeeds/rss/section/nz/?outputType=xml"), // checked 2026-10-14
+        ),
+    ) // English
     put("AS", listOf(RssFeed("https://www.abc.net.au/news/feed/51120/rss.xml"), RssFeed("https://www.smh.com.au/rss/feed.xml"))) // English
     put("TN", listOf(RssFeed("https://matangitonga.to/rss.xml"), RNZ_PACIFIC)) // Tonga: its own outlet, plus RNZ
     put("FJ", listOf(RssFeed("https://www.fbcnews.com.fj/feed/"), RNZ_PACIFIC)) // English; the Fiji Times blocks feeds
@@ -40,7 +47,14 @@ val CURATED_FEEDS: Map<String, List<RssFeed>> = buildMap {
     }
 
     // South America: the antipode of much of South and East Asia, and of Indonesia and China's neighbours
-    put("PE", listOf(RssFeed("https://andina.pe/ingles/rss.aspx"), RssFeed("https://andina.pe/agencia/rss/rss.aspx"))) // English, Spanish (state agency)
+    put(
+        "PE",
+        listOf(
+            RssFeed("https://andina.pe/ingles/rss.aspx"), // English (state agency)
+            RssFeed("https://andina.pe/agencia/rss/rss.aspx"), // Spanish (state agency)
+            RssFeed("https://panamericana.pe/noticias.xml"), // Spanish, checked 2026-10-14
+        ),
+    )
     put(
         "AR",
         listOf(
