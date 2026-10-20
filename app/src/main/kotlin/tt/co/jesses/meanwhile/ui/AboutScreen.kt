@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.net.Uri
+import android.os.Build
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -55,6 +56,7 @@ import tt.co.jesses.meanwhile.R
 import tt.co.jesses.meanwhile.core.AnalyticsChoice
 import tt.co.jesses.meanwhile.core.LocationAccess
 import tt.co.jesses.meanwhile.core.TelemetryEvent
+import tt.co.jesses.meanwhile.core.feedbackFormUrl
 
 private const val KOFI_URL = "https://ko-fi.com/jessescott"
 private const val SITE_URL = "https://jesses.co.tt"
@@ -178,6 +180,13 @@ fun AboutScreen(locationAccess: LocationAccess, onTurnOnLocation: () -> Unit, on
                         Text("Send a test crash (debug builds only)")
                     }
                 }
+            }
+
+            Section(stringResource(R.string.about_feedback_title)) {
+                Body(stringResource(R.string.about_feedback_body))
+                OutlinedButton(onClick = {
+                    openUrl(context, feedbackFormUrl(appVersion(context)?.first, Build.MODEL, Build.VERSION.RELEASE))
+                }) { Text(stringResource(R.string.about_feedback_button)) }
             }
 
             Section(stringResource(R.string.about_support_title)) {

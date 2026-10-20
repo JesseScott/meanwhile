@@ -210,7 +210,7 @@
     <!-- Promises: approximate location only, not stored, no accounts. -->
     <string name="about_privacy_location">Your location. Meanwhile asks for approximate location only, to work out the point opposite you. It isn\'t stored, and there are no accounts.</string>
     <!-- Says exactly what is sent and to whom. "Only a country code" is a promise. "Open-ocean mode" is the "Open ocean" view. -->
-    <string name="about_privacy_leaves_phone">What leaves your phone. The point opposite you goes to your device\'s geocoder (usually Google) to find the country and, in open-ocean mode, to Open-Meteo for sea conditions. Only a country code goes to the news sources. That point is your location mirrored, so treat it as approximate-location data. You can search for a place instead; searches go to the geocoder too.</string>
+    <string name="about_privacy_leaves_phone">What leaves your phone. The point opposite you goes to your device\'s geocoder (usually Google) to find the country and, in open-ocean mode, to Open-Meteo for sea conditions. Only a country code goes to the news sources. That point is your location mirrored, so treat it as approximate-location data. You can search for a place instead; searches go to the geocoder too. If you send feedback, the form (run by Tally) gets what you type, the app version and your phone\'s model and Android version.</string>
     <!-- Reports are off by default, and the list of what they contain is complete. "They never include" is a promise.
          "The switch" is the "Share usage and crash data" switch below this list. -->
     <string name="about_privacy_reports">Usage and crash reports are off unless you turn them on below. If you do, Meanwhile uses Firebase, a Google service, to see how the app is used and to find crashes: screens opened, whether a load worked and how long it took, the country of the headlines you load, kinds of errors, your phone\'s model, Android and app version, and a random installation ID. They never include your exact location or the place you search for. That country is usually on the far side of the world from you, so it hints at roughly where you are. Turning the switch off stops them and resets the ID.</string>
@@ -221,6 +221,11 @@
     <string name="about_share_usage_detail">Off unless you turn it on</string>
     <string name="about_link_privacy_policy">Privacy policy</string>
     <string name="about_link_firebase">How Firebase handles data</string>
+
+    <string name="about_feedback_title">Feedback</string>
+    <!-- "It sends only" is a promise: the form gets what the tester types plus the two pre-filled answers. -->
+    <string name="about_feedback_body">Found something confusing, slow or broken, or something you liked? Tell me through a short form. It sends only what you type, plus the app version and phone model.</string>
+    <string name="about_feedback_button">Send feedback</string>
 
     <string name="about_support_title">Support</string>
     <string name="about_support_body">If you\'d like to support Meanwhile, you can buy me a coffee.</string>

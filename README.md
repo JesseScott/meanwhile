@@ -57,6 +57,7 @@ The first two are searched from Madrid (the opposite point is in New Zealand); t
 - The last three places you pick from a search are kept on your phone so you can go back to them. They never leave it, and the Recent places list has a Clear button.
 - Only the country code goes to the news sources. In ocean mode the opposite point's coordinates go to Open-Meteo.
 - **Usage and crash reports are off by default.** If you opt in (Settings in the About screen), Firebase receives a fixed list of facts (screens opened, whether a load worked and how long it took, the country of the headlines you load, kinds of errors, phone model, app version) and never your exact location or the place you search for. Turning it off clears the ID.
+- Feedback goes through a form run by Tally, only if you submit it. It gets what you type, the app version and your phone's model and Android version.
 - No ads. Tapping a headline opens the publisher's own site.
 
 The full text is in the app's About screen.
