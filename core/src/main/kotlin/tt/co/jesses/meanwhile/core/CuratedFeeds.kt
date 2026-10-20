@@ -39,7 +39,16 @@ val CURATED_FEEDS: Map<String, List<RssFeed>> = buildMap {
     ) // English
     put("AS", listOf(RssFeed("https://www.abc.net.au/news/feed/51120/rss.xml"), RssFeed("https://www.smh.com.au/rss/feed.xml"))) // English
     put("TN", listOf(RssFeed("https://matangitonga.to/rss.xml"), RNZ_PACIFIC)) // Tonga: its own outlet, plus RNZ
-    put("FJ", listOf(RssFeed("https://www.fbcnews.com.fj/feed/"), RNZ_PACIFIC)) // English; the Fiji Times blocks feeds
+    put(
+        "FJ",
+        listOf(
+            RssFeed("https://www.fbcnews.com.fj/feed/"),
+            RssFeed("https://www.fijionenews.com.fj/feed/"), // checked 2026-10-20
+            // Suva-based but Pacific-wide, so filtered like RNZ Pacific; checked 2026-10-20
+            RssFeed("https://islandsbusiness.com/feed/", requirePlaceName = true),
+            RNZ_PACIFIC,
+        ),
+    ) // English; the Fiji Times, Fijivillage, Fiji Sun and Fijilive block feeds or have none
     put("FP", listOf(RssFeed("https://www.tahiti-infos.com/xml/syndication.rss"), RNZ_PACIFIC)) // French
     // RNZ Pacific covers the whole region, so it is filtered to items that name the country.
     for (fips in listOf("WS", "NH", "BP", "KR", "TV", "NR", "CW", "NE", "FM", "RM", "PS", "PP", "NC", "AQ", "GQ", "CQ", "TL", "WF")) {
@@ -108,7 +117,14 @@ val CURATED_FEEDS: Map<String, List<RssFeed>> = buildMap {
     put("MP", listOf(RssFeed("https://www.newsmoris.com/feed/"), RssFeed("https://defimedia.info/rss.xml"))) // Mauritius: English, French
     put("RE", listOf(RssFeed("https://www.zinfos974.com/xml/syndication.rss"), RssFeed("https://www.imazpress.com/feed"))) // Réunion: French
     put("MO", listOf(RssFeed("https://en.hespress.com/feed"), RssFeed("https://fr.hespress.com/feed"))) // Morocco: English, French
-    put("SF", listOf(RssFeed("https://www.dailymaverick.co.za/dmrss/"))) // English; News24, TimesLive and others refuse
+    put(
+        "SF",
+        listOf(
+            RssFeed("https://www.dailymaverick.co.za/dmrss/"),
+            RssFeed("https://www.sabcnews.com/sabcnews/feed/"), // checked 2026-10-20
+            RssFeed("https://iol.co.za/rss/iol/news/"), // checked 2026-10-20
+        ),
+    ) // English; News24, TimesLive, BusinessTech and others refuse
     put("BC", listOf(RssFeed("https://www.thegazette.news/feed/"), RssFeed("https://sundaystandard.info/feed/"))) // Botswana: English, thin
 
     // The big countries GDELT usually covers well, as a fallback for the days it doesn't
