@@ -42,7 +42,7 @@ Ireland, Australia, New Zealand and South Africa, where the app's first users mo
 | Spain | 0.2% | 1.1% | 0 | El Mundo (Spanish, fallback) |
 | Bermuda | 0.2% | 1.0% | 68 | none yet |
 | Botswana | 0.1% | 0.5% | 0 | The Gazette, Sunday Standard (English, thin) |
-| South Africa | 0.0% | 0.2% | 3022 | Daily Maverick (English) |
+| South Africa | 0.0% | 0.2% | 3022 | Daily Maverick, SABC News, IOL (English) |
 
 Limits worth knowing:
 - Populations, not users. The English-market column is the better guide for now.
@@ -66,12 +66,31 @@ a day), small (the app fetches every feed for a country on each load, so nothing
 
 **Left out on purpose:**
 - *Too big:* El Comercio Peru (1.5 MB), Infobae (1.1 MB), Expreso (868 KB), La Nacion (809 KB), Semana (653 KB), La Tercera
-  (633 KB), El Pais Spain (623 KB), The Citizen South Africa (638 KB), G1 (341 KB).
+  (633 KB), El Pais Spain (623 KB), The Citizen South Africa (638 KB; its South Africa section feed is 504 KB), The South
+  African (641 KB), Asia Pacific Report (494 KB), G1 (341 KB).
 - *Plain http:* ECNS (China). Android blocks cleartext traffic.
 - *Blocked, dead or stale:* Fiji Times, Fijivillage, Fiji Sun, China Daily, Global Times, Xinhua, Kyodo, Jakarta Globe, Manila
   Bulletin, PNA, Midi Madagasikara, Radio1 Tahiti, Morocco World News, H24, Medias24, Le360, News24, TimesLive, Mail and
-  Guardian, EWN, CBC, Mmegi, Peru21, Biobio, Emol, Pagina12, Primicias, La Republica Peru, Le Mauricien, lexpress.mu.
+  Guardian, EWN, BusinessTech, MyBroadband, Fijilive (all HTTP 403), GroundUp, Sowetan (no feed), Fiji One TV, Mai TV,
+  fiji.gov.fj (parked or no answer), PINA (feed says "No Feed Access"), Wansolwara (stale since 2020), CBC, Mmegi, Peru21,
+  Biobio, Emol, Pagina12, Primicias, La Republica Peru, Le Mauricien, lexpress.mu.
 - *Not country news:* the generic SBS feed (stale), Infobae Argentina (empty), El Espectador (comments only), The Rio Times.
+
+### South Africa, Fiji and Australia, 2026-10-20
+
+South Africa and Fiji each relied on one local outlet, so more feeds were searched for and checked with `LiveFeedsCheck`
+and a fetch with the app's User-Agent (issue 88).
+
+| Country | Added | Size | Also working, kept in reserve |
+| --- | --- | ---: | --- |
+| South Africa | SABC News, IOL News section | 39 KB, 79 KB | eNCA (52 KB, two-digit years parse fine), SAnews.gov.za (51 KB, government), Moneyweb (16 KB, business), allAfrica South Africa (23 KB, items up to five days old) |
+| Fiji | Fiji One News; Islands Business (Pacific-wide, so `requirePlaceName`) | 29 KB, 15 KB | |
+
+All were fresh (newest item within a day), https, English, with no future dates. Fiji now has FBC, Fiji One News and
+Islands Business, plus RNZ Pacific.
+
+**Australia spot-check:** ABC News (feed 51120, 85 KB, 25 items) and the Sydney Morning Herald (17 KB, 20 items) both
+still answer, with newest items minutes old and no future dates.
 
 ## 3. What GDELT has for the same places
 
