@@ -47,7 +47,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.OutlinedCard
@@ -480,7 +480,7 @@ private val MyLocationIcon: ImageVector by lazy {
 @Composable
 private fun Header(state: UiState, compact: Boolean, onOpenAbout: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        // The settings icon shares the title's row, so it lines up with "Meanwhile" and not with the middle of the
+        // The info icon shares the title's row, so it lines up with "Meanwhile" and not with the middle of the
         // title and tagline together. The tagline sits under the whole row.
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -489,7 +489,7 @@ private fun Header(state: UiState, compact: Boolean, onOpenAbout: () -> Unit) {
         ) {
             Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             IconButton(onClick = onOpenAbout) {
-                Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.header_open_about))
+                Icon(Icons.Outlined.Info, contentDescription = stringResource(R.string.header_open_about))
             }
         }
         if (!compact) {

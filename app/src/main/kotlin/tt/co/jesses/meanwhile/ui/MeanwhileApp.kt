@@ -196,6 +196,9 @@ fun MeanwhileApp(viewModel: MainViewModel) {
                 showAbout -> AboutScreen(
                     locationAccess = locationAccess,
                     onTurnOnLocation = useLocation,
+                    onNoMailApp = {
+                        scope.launch { snackbar.showSnackbar(resources.getString(R.string.about_contact_no_mail_app)) }
+                    },
                     onBack = { showAbout = false },
                 )
                 else -> MeanwhileScreen(

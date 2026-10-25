@@ -8,7 +8,7 @@ WHAT I'D LIKE YOU TO TRY
 - When it lands in the ocean, tap "Nearest land" and back to "Open ocean". Does the screen stay put?
 - Pull down on the headlines to refresh.
 - Tap a headline to open it. Try dark mode, a big font size, and turning your data off.
-- Look at the About screen (the gear): is the privacy text clear?
+- Tap the info button at the top for Settings and About: is the privacy text (Settings, then Privacy) clear?
 
 WHAT'S ROUGH, SO YOU KNOW
 - Small countries can have only a few headlines, or none. That's the data, not you.
