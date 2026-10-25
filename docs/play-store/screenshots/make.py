@@ -1,20 +1,21 @@
 """Builds the framed Play Store screenshots: a phone-shaped frame around a real screenshot, with a caption.
-Run from this folder, then render each shot-N.html at 1080x1920 (see the README note in the repo history)."""
+Run from this folder (needs Pillow), then render each shot-N.html at 1080x1920 (see the README note in the repo history)."""
 import html
 
-# (screenshot, caption, name, the app's own background colour, used for the strip above the cropped status bar)
-LIGHT, DARK = "#fbfcff", "#1a1b21"
-SHOTS = [
-    ("headlines.png", "Headlines from the other side of the world", "headlines", LIGHT),
-    ("ocean.png", "Most of the planet is water, so start at sea", "ocean", LIGHT),
-    ("headlines-dark.png", "Easy on the eyes at night", "dark", DARK),
-    ("about-privacy.png", "Private by default", "private", LIGHT),
-]
-# The raw captures include the emulator's status bar (clock, battery), which the frame's rounded corners would clip.
-# Crop it off (CROP_TOP of the 2424 px height, Pixel 10 emulator) and give the screen a little padding in the app's own colour instead.
-CROP_TOP = 142
-PAD_TOP = 34
+from PIL import Image
 
+# (screenshot, caption, name, rows to crop off the top). Screenshots are 1080 px wide.
+# The raw captures include the status bar (clock, battery), which the frame's rounded corners would clip, so it is
+# cropped off: 100 px on the Pixel 7 Pro captures (scaled to 1080 x 2340), 142 px on the Pixel 10 emulator (1080 x 2424).
+SHOTS = [
+    ("headlines.png", "Headlines from the other side of the world", "headlines", 100),
+    ("ocean.png", "Most of the planet is water, so start at sea", "ocean", 100),
+    ("headlines-dark.png", "Easy on the eyes at night", "dark", 100),
+    ("about-privacy.png", "Private by default", "private", 142),
+]
+# A little padding above the cropped screen. It takes the colours of the screenshot's first row after the crop, so the
+# flag wash behind the header carries on to the top of the frame instead of stopping at a flat strip.
+PAD_TOP = 34
 TEMPLATE = """<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@500;700&display=swap">
@@ -33,9 +34,21 @@ TEMPLATE = """<!DOCTYPE html>
 <div class="phone"><div class="clip"><img src="../../screenshots/{image}" alt=""></div></div></body></html>
 """
 
-for n, (image, caption, _name, bg) in enumerate(SHOTS, 1):
+def top_row_gradient(path: str, crop: int) -> str:
+    """The screenshot's colours along the first row below the crop, as a left-to-right CSS gradient."""
+    with Image.open(f"../../screenshots/{path}") as im:
+        im = im.convert("RGB")
+        stops = []
+        for i in range(9):
+            x = round(i * (im.width - 1) / 8)
+            r, g, b = im.getpixel((x, crop))
+            stops.append(f"rgb({r},{g},{b}) {i * 12.5:g}%")
+    return "linear-gradient(to right, " + ", ".join(stops) + ")"
+
+
+for n, (image, caption, _name, crop_top) in enumerate(SHOTS, 1):
     # The image is shown 728 px wide (760 less the 16 px border each side), so 1080 raw px = 728 px.
-    crop = round(CROP_TOP * 728 / 1080)
+    crop = round(crop_top * 728 / 1080)
     with open(f"shot-{n}.html", "w", encoding="utf-8", newline="\n") as f:
-        f.write(TEMPLATE.format(caption=html.escape(caption), image=image, bg=bg, pad=PAD_TOP, crop=crop))
+        f.write(TEMPLATE.format(caption=html.escape(caption), image=image, bg=top_row_gradient(image, crop_top), pad=PAD_TOP, crop=crop))
 print(len(SHOTS), "pages")
