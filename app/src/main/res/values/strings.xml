@@ -186,8 +186,9 @@
     <string name="about_version_summary">%1$s (%2$d)</string>
     <string name="about_version_summary_unknown">Unknown</string>
     <string name="about_meanwhile_title">About Meanwhile</string>
-    <string name="about_meanwhile_summary">A free hobby project by Jesse Scott</string>
+    <string name="about_meanwhile_summary">A project by Jesse Scott</string>
     <string name="about_what_it_does">Meanwhile shows what\'s happening on the exact opposite side of the Earth from you: headlines from the country there, or from the nearest land when it\'s open sea.</string>
+    <string name="about_byline">A project by Jesse Scott.</string>
     <string name="about_link_site" translatable="false">jesses.co.tt</string>
 
     <string name="about_location_title">Location</string>
@@ -239,15 +240,14 @@
     <!-- Google Play needs this section to be clearly labelled as a way to contact the developer. -->
     <string name="about_contact_title">Contact us</string>
     <string name="about_contact_summary">Email or a short feedback form</string>
-    <string name="about_contact_body">Questions, ideas, or a headline that looks wrong? Email me, or use the short form below.</string>
+    <string name="about_contact_body">Questions, ideas, or a headline that looks wrong?</string>
     <!-- Label above the contact email address, which opens the mail app. -->
     <string name="about_contact_email_label">Email</string>
     <!-- Accessibility: what tapping the email address does. -->
     <string name="about_contact_email_action">Write an email</string>
     <!-- Shown when the phone has no mail app; the address has been copied instead. -->
     <string name="about_contact_no_mail_app">No mail app found, so the address is copied.</string>
-    <!-- "It sends only" is a promise: the form gets what the tester types plus the two pre-filled answers. -->
-    <string name="about_feedback_body">Found something confusing, slow or broken, or something you liked? Tell me through a short form. It sends only what you type, plus the app version and phone model.</string>
+    <string name="about_feedback_body">Found something confusing, slow or broken, or something you liked?</string>
     <string name="about_feedback_button">Send feedback</string>
 
     <string name="about_support_title">Support</string>

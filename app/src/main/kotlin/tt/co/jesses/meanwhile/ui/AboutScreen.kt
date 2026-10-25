@@ -243,6 +243,8 @@ private fun AboutTabContent(onNoMailApp: () -> Unit) {
         initiallyExpanded = true,
     ) {
         Body(stringResource(R.string.about_what_it_does))
+        // The byline sits just above the website it points to.
+        Body(stringResource(R.string.about_byline))
         LinkButton(stringResource(R.string.about_link_site), SITE_URL)
     }
     SectionDivider()
