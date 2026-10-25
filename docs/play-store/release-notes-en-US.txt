@@ -1,7 +1,7 @@
-Meanwhile 0.1.11 (build 11)
+Meanwhile 0.1.12 (build 12)
 
 Thanks for testing!
 
-New: About shows the version and build, so you can tell which one you have. Under the hood, updated libraries and a newer networking stack.
+New: the info button at the top opens Settings and About, now in two tabs with sections you can open and close. About has a Contact us section with an email address and a short feedback form. More local news for South Africa and Fiji.
 
 Try: location, search, ocean and land, pull to refresh, dark mode.
