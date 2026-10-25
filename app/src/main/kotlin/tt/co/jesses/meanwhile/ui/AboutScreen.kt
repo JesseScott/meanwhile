@@ -239,7 +239,6 @@ private fun AboutTabContent(onNoMailApp: () -> Unit) {
 
     Accordion(
         title = stringResource(R.string.about_meanwhile_title),
-        summary = stringResource(R.string.about_meanwhile_summary),
         initiallyExpanded = true,
     ) {
         Body(stringResource(R.string.about_what_it_does))

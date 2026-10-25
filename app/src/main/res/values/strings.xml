@@ -186,7 +186,6 @@
     <string name="about_version_summary">%1$s (%2$d)</string>
     <string name="about_version_summary_unknown">Unknown</string>
     <string name="about_meanwhile_title">About Meanwhile</string>
-    <string name="about_meanwhile_summary">A project by Jesse Scott</string>
     <string name="about_what_it_does">Meanwhile shows what\'s happening on the exact opposite side of the Earth from you: headlines from the country there, or from the nearest land when it\'s open sea.</string>
     <string name="about_byline">A project by Jesse Scott.</string>
     <string name="about_link_site" translatable="false">jesses.co.tt</string>
