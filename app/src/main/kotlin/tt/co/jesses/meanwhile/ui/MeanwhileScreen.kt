@@ -129,6 +129,9 @@ import kotlin.math.roundToInt
 /** Screens shorter than this (small phones, landscape) get a shorter header: no tagline, and a one-line note. */
 private const val SHORT_SCREEN_DP = 700
 
+/** Landscape screens at least this wide put the header's two halves side by side. */
+private const val SIDE_BY_SIDE_MIN_WIDTH_DP = 600
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MeanwhileScreen(
@@ -172,8 +175,13 @@ fun MeanwhileScreen(
                 iso = state.country?.iso?.takeIf { showFlagWash && state.antipode != null && !state.showingOcean },
                 modifier = Modifier.matchParentSize(),
             )
-            // The screen's height, not the window's, so the header doesn't change when the keyboard opens.
-            val shortScreen = LocalConfiguration.current.screenHeightDp < SHORT_SCREEN_DP
+            // The screen's size, not the window's, so the header doesn't change when the keyboard opens.
+            val configuration = LocalConfiguration.current
+            val shortScreen = configuration.screenHeightDp < SHORT_SCREEN_DP
+            // In landscape the header goes side by side, or the search bar would leave room for little more than
+            // the app name: the name and place on the left, the switch and the search bar on the right.
+            val sideBySide = configuration.screenWidthDp > configuration.screenHeightDp &&
+                configuration.screenWidthDp >= SIDE_BY_SIDE_MIN_WIDTH_DP
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -183,24 +191,46 @@ fun MeanwhileScreen(
             ) {
                 // Text here stops growing at 1.5x, so the largest settings don't hand half the screen to the header.
                 CappedFontScale {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().weight(1f, fill = false).verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Header(state, compact = shortScreen, onOpenAbout = onOpenAbout)
-                        if (state.antipodeIsWater) ModeSwitch(state.mode) { onEvent(UiEvent.SetMode(it)) }
+                    val searchBar = @Composable {
+                        SearchBar(
+                            query = query,
+                            onQueryChange = { query = it },
+                            onFocusChange = { searchFocused = it },
+                            places = state.searchResults,
+                            onSearch = { onEvent(UiEvent.Search(it)) },
+                            onPick = { onEvent(UiEvent.PickPlace(it)) },
+                            onDismissPlaces = { onEvent(UiEvent.DismissPlaces) },
+                            onUseLocation = onUseLocation,
+                            focusRequester = searchFocus,
+                        )
                     }
-                    SearchBar(
-                        query = query,
-                        onQueryChange = { query = it },
-                        onFocusChange = { searchFocused = it },
-                        places = state.searchResults,
-                        onSearch = { onEvent(UiEvent.Search(it)) },
-                        onPick = { onEvent(UiEvent.PickPlace(it)) },
-                        onDismissPlaces = { onEvent(UiEvent.DismissPlaces) },
-                        onUseLocation = onUseLocation,
-                        focusRequester = searchFocus,
-                    )
+                    if (sideBySide) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                                Header(state, compact = true, onOpenAbout = onOpenAbout)
+                            }
+                            // Scrolls on its own only at the largest text sizes; normally the switch and the bar both fit.
+                            Column(
+                                modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                if (state.antipodeIsWater) ModeSwitch(state.mode) { onEvent(UiEvent.SetMode(it)) }
+                                searchBar()
+                            }
+                        }
+                    } else {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().weight(1f, fill = false).verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Header(state, compact = shortScreen, onOpenAbout = onOpenAbout)
+                            if (state.antipodeIsWater) ModeSwitch(state.mode) { onEvent(UiEvent.SetMode(it)) }
+                        }
+                        searchBar()
+                    }
                 }
             }
         }
