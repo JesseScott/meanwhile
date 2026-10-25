@@ -15,10 +15,12 @@ import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.material3.CardDefaults
 import kotlin.random.Random
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.window.PopupProperties
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import tt.co.jesses.meanwhile.NamedPlace
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
@@ -132,6 +134,9 @@ private const val SHORT_SCREEN_DP = 700
 /** Landscape screens at least this wide put the header's two halves side by side. */
 private const val SIDE_BY_SIDE_MIN_WIDTH_DP = 600
 
+private val HEADER_PADDING_TOP = 4.dp
+private val HEADER_PADDING_BOTTOM = 8.dp
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MeanwhileScreen(
@@ -182,16 +187,28 @@ fun MeanwhileScreen(
             // the app name: the name and place on the left, the switch and the search bar on the right.
             val sideBySide = configuration.screenWidthDp > configuration.screenHeightDp &&
                 configuration.screenWidthDp >= SIDE_BY_SIDE_MIN_WIDTH_DP
+            // Half the window, which shrinks when the keyboard opens. In landscape that can be less than the search
+            // bar needs, so the cap never goes below the bar's own height plus the padding around it.
+            val density = LocalDensity.current
+            var searchBarHeight by remember { mutableStateOf(0.dp) }
+            val headerCap = maxOf(this@BoxWithConstraints.maxHeight * 0.5f, searchBarHeight + HEADER_PADDING_TOP + HEADER_PADDING_BOTTOM)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = this@BoxWithConstraints.maxHeight * 0.5f)
-                    .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
+                    .heightIn(max = headerCap)
+                    .padding(start = 16.dp, end = 16.dp, top = HEADER_PADDING_TOP, bottom = HEADER_PADDING_BOTTOM),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 // Text here stops growing at 1.5x, so the largest settings don't hand half the screen to the header.
                 CappedFontScale {
                     val searchBar = @Composable {
+                        // Measured at its natural height, even when the header is squeezed for a frame, so the cap
+                        // above can't settle on a squashed bar.
+                        Box(
+                            Modifier
+                                .wrapContentHeight(Alignment.Top, unbounded = true)
+                                .onSizeChanged { searchBarHeight = with(density) { it.height.toDp() } },
+                        ) {
                         SearchBar(
                             query = query,
                             onQueryChange = { query = it },
@@ -203,6 +220,7 @@ fun MeanwhileScreen(
                             onUseLocation = onUseLocation,
                             focusRequester = searchFocus,
                         )
+                        }
                     }
                     if (sideBySide) {
                         Row(
@@ -212,12 +230,17 @@ fun MeanwhileScreen(
                             Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                                 Header(state, compact = true, onOpenAbout = onOpenAbout)
                             }
-                            // Scrolls on its own only at the largest text sizes; normally the switch and the bar both fit.
+                            // As in portrait, only the part above the bar scrolls, so the bar stays whole even with the
+                            // keyboard open or the largest text.
                             Column(
-                                modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                                modifier = Modifier.weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                if (state.antipodeIsWater) ModeSwitch(state.mode) { onEvent(UiEvent.SetMode(it)) }
+                                if (state.antipodeIsWater) {
+                                    Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                                        ModeSwitch(state.mode) { onEvent(UiEvent.SetMode(it)) }
+                                    }
+                                }
                                 searchBar()
                             }
                         }
