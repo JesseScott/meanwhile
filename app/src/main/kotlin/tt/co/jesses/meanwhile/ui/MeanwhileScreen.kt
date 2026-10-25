@@ -8,7 +8,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.material3.CardDefaults
+import kotlin.random.Random
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -128,6 +133,8 @@ private const val SHORT_SCREEN_DP = 700
 fun MeanwhileScreen(
     state: UiState,
     showFlagWash: Boolean,
+    showSearchTip: Boolean,
+    onSearchTipDone: () -> Unit,
     onUseLocation: () -> Unit,
     onEvent: (UiEvent) -> Unit,
     onOpenAbout: () -> Unit,
@@ -145,6 +152,7 @@ fun MeanwhileScreen(
     val listState = rememberLazyListState()
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = LocalFocusManager.current
+    val searchFocus = remember { FocusRequester() }
     // Back closes the list of matches first; without this it would leave the app with the list still open.
     BackHandler(enabled = state.searchResults.isNotEmpty()) { onEvent(UiEvent.DismissPlaces) }
     // The list may be scrolled down when the bar is tapped; bring the recent places into view.
@@ -190,6 +198,7 @@ fun MeanwhileScreen(
                         onPick = { onEvent(UiEvent.PickPlace(it)) },
                         onDismissPlaces = { onEvent(UiEvent.DismissPlaces) },
                         onUseLocation = onUseLocation,
+                        focusRequester = searchFocus,
                     )
                 }
             }
@@ -222,6 +231,17 @@ fun MeanwhileScreen(
                             onEvent(UiEvent.PickPlace(it))
                         },
                         onClear = { onEvent(UiEvent.ClearRecentPlaces) },
+                    )
+                }
+                // In the list, not the header, so it never changes the header's height.
+                if (showSearchTip && !showRecent) item(key = "search-tip") {
+                    SearchTip(
+                        onUse = {
+                            onSearchTipDone()
+                            searchFocus.requestFocus()
+                            keyboard?.show()
+                        },
+                        onClose = onSearchTipDone,
                     )
                 }
                 state.notice?.let { notice ->
@@ -350,6 +370,7 @@ private fun SearchBar(
     onPick: (NamedPlace) -> Unit,
     onDismissPlaces: () -> Unit,
     onUseLocation: () -> Unit,
+    focusRequester: FocusRequester,
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = LocalFocusManager.current
@@ -370,9 +391,19 @@ private fun SearchBar(
             onValueChange = onQueryChange,
             modifier = Modifier
                 .fillMaxWidth()
+                .focusRequester(focusRequester)
                 .onFocusChanged { onFocusChange(it.isFocused) }
                 .onGloballyPositioned { barWidth = with(density) { it.size.width.toDp() } },
-            placeholder = { Text(stringResource(R.string.search_placeholder)) },
+            placeholder = {
+                // An example says what search is for; read aloud, the plain label is clearer.
+                val label = stringResource(R.string.search_placeholder)
+                Text(
+                    stringResource(R.string.search_placeholder_example, examplePlace()),
+                    modifier = Modifier.semantics { contentDescription = label },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             trailingIcon = {
                 Row {
@@ -416,6 +447,45 @@ private fun SearchBar(
                         pickedPlace = true
                         onPick(place)
                     },
+                )
+            }
+        }
+    }
+}
+
+/** One of the example cities, picked at random once per launch so it doesn't change while the user looks at it. */
+@Composable
+private fun examplePlace(): String {
+    val places = stringArrayResource(R.array.search_example_places)
+    val index = rememberSaveable { Random.nextInt(places.size) }
+    return places[index % places.size]
+}
+
+/** A one-time pointer to the search bar, for people who allowed location and never needed to search. */
+@Composable
+private fun SearchTip(onUse: () -> Unit, onClose: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f).clickable(onClick = onUse).padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.Filled.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text(
+                    stringResource(R.string.search_tip),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+            IconButton(onClick = onClose) {
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = stringResource(R.string.search_tip_close),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
         }

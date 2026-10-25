@@ -72,6 +72,15 @@ class SettingsRepositoryTest {
     }
 
     @Test
+    fun theSearchTipStaysSeenOnceClosed() = runTest {
+        val (repo, _) = repository()
+        assertFalse(repo.searchTipSeen.first())
+
+        repo.setSearchTipSeen()
+        assertTrue(repo.searchTipSeen.first())
+    }
+
+    @Test
     fun theChoiceSurvivesTheAppRestarting() = runTest {
         val file = File.createTempFile("settings", ".preferences_pb").also { it.delete() }
         // The first process: write the choice, then end it (DataStore allows only one live instance per file).
