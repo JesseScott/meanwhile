@@ -23,10 +23,10 @@ PRIVATE BY DEFAULT
 - Search for a place instead of sharing your location if you prefer.
 - No ads.
 - Usage and crash reports are off unless you turn them on, and they never include your exact location or what you read.
-Details are in the app's About screen and the privacy policy.
+Details are in the app's Settings and the privacy policy.
 
 A HOBBY PROJECT
-Meanwhile is made by one person. It is free, has no ads, and is not a business. If you enjoy it you can buy me a coffee from the About screen; nothing is locked behind it.
+Meanwhile is made by one person. It is free, has no ads, and is not a business. If you enjoy it you can buy me a coffee from the app's About tab; nothing is locked behind it.
 
 CREDITS
 Headlines come from the GDELT Project and a few public news feeds. Sea conditions are from Open-Meteo.com (CC BY 4.0, with data from national weather services). Meanwhile is not affiliated with them. Open source licenses are listed in the app.

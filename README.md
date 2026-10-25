@@ -49,18 +49,18 @@ The first two are searched from Madrid (the opposite point is in New Zealand); t
 | GDELT rate | One request per 5.5 s; after a 429 or a non-JSON reply it stands down for 1 to 15 minutes instead of retrying |
 | Result limits | At most 100 headlines, 8 per outlet |
 | Countries with explicit language rules | 11 (MG, TO, WS, NU, FM, TV, CC, LY, ME, AI, CO) |
-| Dependencies | Open source licences are listed in the app (About, then Open source licenses) |
+| Dependencies | Open source licences are listed in the app (the info button, then About, then Open source) |
 
 ## Privacy
 
 - Coarse location only, used to compute the opposite point. It is not stored.
 - The last three places you pick from a search are kept on your phone so you can go back to them. They never leave it, and the Recent places list has a Clear button.
 - Only the country code goes to the news sources. In ocean mode the opposite point's coordinates go to Open-Meteo.
-- **Usage and crash reports are off by default.** If you opt in (Settings in the About screen), Firebase receives a fixed list of facts (screens opened, whether a load worked and how long it took, the country of the headlines you load, kinds of errors, phone model, app version) and never your exact location or the place you search for. Turning it off clears the ID.
-- Feedback goes through a form run by Tally, only if you submit it. It gets what you type, the app version and your phone's model and Android version.
+- **Usage and crash reports are off by default.** If you opt in (the info button, then Settings, then Privacy), Firebase receives a fixed list of facts (screens opened, whether a load worked and how long it took, the country of the headlines you load, kinds of errors, phone model, app version) and never your exact location or the place you search for. Turning it off clears the ID.
+- Feedback goes through a form run by Tally, only if you submit it. It gets what you type, the app version and your phone's model and Android version. You can also email js@jesses.co.tt (About, then Contact us); that goes through your own mail app.
 - No ads. Tapping a headline opens the publisher's own site.
 
-The full text is in the app's About screen.
+The full text is in the app, under the info button: Settings, then Privacy.
 
 ## Data and credits
 
