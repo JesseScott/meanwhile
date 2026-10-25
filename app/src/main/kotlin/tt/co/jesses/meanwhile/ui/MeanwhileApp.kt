@@ -137,6 +137,8 @@ fun MeanwhileApp(viewModel: MainViewModel) {
     val introSeen by produceState<Boolean?>(initialValue = null) { settings.introSeen.collect { value = it } }
     // Off until the saved setting has been read, so a wash the user turned off never flashes up at launch.
     val flagWash by produceState(initialValue = false) { settings.flagWash.collect { value = it } }
+    // Counts as seen until the saved setting has been read, so the tip never flashes up for someone who closed it.
+    val searchTipSeen by produceState(initialValue = true) { settings.searchTipSeen.collect { value = it } }
     var introDismissed by rememberSaveable { mutableStateOf(false) }
     val showIntro = introSeen == false && !introDismissed && !hasLocationPermission()
     var showAbout by rememberSaveable { mutableStateOf(false) }
@@ -204,8 +206,14 @@ fun MeanwhileApp(viewModel: MainViewModel) {
                 else -> MeanwhileScreen(
                     state = state,
                     showFlagWash = flagWash,
+                    // Only once headlines from the phone's own location are showing: someone who has searched already knows.
+                    showSearchTip = !searchTipSeen && state.status == Status.Ready && state.originLabel == null,
+                    onSearchTipDone = { scope.launch { settings.setSearchTipSeen() } },
                     onUseLocation = useLocation,
-                    onEvent = viewModel::onEvent,
+                    onEvent = { event ->
+                        if (event is UiEvent.PickPlace) scope.launch { settings.setSearchTipSeen() }
+                        viewModel.onEvent(event)
+                    },
                     onOpenAbout = {
                         telemetry.log(TelemetryEvent.AboutOpened)
                         showAbout = true

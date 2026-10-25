@@ -68,7 +68,25 @@
     <string name="mode_open_ocean">Open ocean</string>
 
     <!-- Main screen: the search bar and the list of recently picked places. -->
+    <!-- Read aloud for the empty search bar, in place of the example shown on screen. -->
     <string name="search_placeholder">Search for a place</string>
+    <!-- Shown in the empty search bar. %1$s is one of search_example_places, picked at random each time the app opens. -->
+    <string name="search_placeholder_example">Try another place, like %1$s</string>
+    <!-- Major cities whose opposite sides are on land, each in a different country (New Zealand, Spain, Argentina, China,
+         Cambodia, Brazil, Ecuador), so searching them shows headlines. Check a new one's antipode in the app before adding it. -->
+    <string-array name="search_example_places">
+        <item>Madrid</item>
+        <item>Auckland</item>
+        <item>Hong Kong</item>
+        <item>Santiago</item>
+        <item>Lima</item>
+        <item>Manila</item>
+        <item>Singapore</item>
+    </string-array>
+    <!-- A one-time tip at the top of the list, after the first headlines from the phone's location. Tapping it puts the cursor in the search bar. -->
+    <string name="search_tip">Curious about somewhere else? Search any place to see its opposite side.</string>
+    <!-- Accessibility label for the button that closes the search tip. -->
+    <string name="search_tip_close">Close tip</string>
     <!-- Accessibility label for the button that empties the search bar. -->
     <string name="search_clear">Clear</string>
     <!-- Accessibility label for the button that uses the phone's location. -->
@@ -229,7 +247,7 @@
          "The switch" is the "Share usage and crash data" switch below this list. -->
     <string name="about_privacy_reports">Usage and crash reports are off unless you turn them on below. If you do, Meanwhile uses Firebase, a Google service, to see how the app is used and to find crashes: screens opened, whether a load worked and how long it took, the country of the headlines you load, kinds of errors, your phone\'s model, Android and app version, and a random installation ID. They never include your exact location or the place you search for. That country is usually on the far side of the world from you, so it hints at roughly where you are. Turning the switch off stops them and resets the ID.</string>
     <!-- A complete list of what the app keeps on the phone. "Recent places" and "Clear" are the labels used on the main screen. -->
-    <string name="about_privacy_stored">Stored on your phone: headlines for up to three days (so something shows quickly), whether you have seen the welcome screen, whether you have turned down the location prompt, your choice about reports, a count of how often the app has asked, whether the flag behind the header is on, and the last three places you picked from a search (the Recent places list has a Clear button).</string>
+    <string name="about_privacy_stored">Stored on your phone: headlines for up to three days (so something shows quickly), whether you have seen the welcome screen, whether you have turned down the location prompt, your choice about reports, a count of how often the app has asked, whether the flag behind the header is on, whether you have closed the search tip, and the last three places you picked from a search (the Recent places list has a Clear button).</string>
     <string name="about_privacy_no_ads">No ads. Tapping a headline opens the publisher\'s own website in your browser, which has its own privacy policy.</string>
     <string name="about_share_usage_title">Share usage and crash data</string>
     <string name="about_share_usage_detail">Off unless you turn it on</string>
