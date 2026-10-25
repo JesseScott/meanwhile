@@ -3,7 +3,9 @@ package tt.co.jesses.meanwhile.ui
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -14,6 +16,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Constraints
 import tt.co.jesses.meanwhile.core.FLAG_WASH_ALPHA_DARK
 import tt.co.jesses.meanwhile.core.FLAG_WASH_ALPHA_LIGHT
 import tt.co.jesses.meanwhile.core.FlagLayout
@@ -26,17 +32,37 @@ private const val CROSSFADE_MS = 300
 private const val HOIST_END_STRENGTH = 0.55f
 
 /**
+ * The wash is at full strength at the top, under the status bar, and fades towards the bottom of the header until
+ * this much of it is left. Without the fade, a flag of one dark colour (New Zealand's, as the wash draws it) turned
+ * into a flat grey-blue block with a hard lower edge.
+ */
+private const val BOTTOM_STRENGTH = 0.2f
+
+/**
  * The country's flag as a soft wash of colour, to sit behind the header. Purely decorative: it has no semantics,
  * takes whatever size it is given (so it can't change the header's), and draws nothing for a null or unknown
  * [iso]. The flag is drawn as blurred bands and then covered with the surface colour until only a tint is left,
  * so the header's text stays on what is very nearly the plain surface.
+ *
+ * It runs past the top and sides of the space it is given, under the status bar and any cutout the app keeps its
+ * content clear of, so the colour doesn't stop short at the status bar. That part is drawn only, never laid out.
  */
 @Composable
 fun FlagWash(iso: String?, modifier: Modifier = Modifier) {
     val flag = remember(iso) { iso?.let(::flagStripesFor) }
     val surface = MaterialTheme.colorScheme.surface
     val strength = if (surface.luminance() < 0.5f) FLAG_WASH_ALPHA_DARK else FLAG_WASH_ALPHA_LIGHT
-    Crossfade(targetState = flag, modifier = modifier, animationSpec = tween(CROSSFADE_MS), label = "flagWash") { shown ->
+    val insets = WindowInsets.safeDrawing
+    val density = LocalDensity.current
+    val direction = LocalLayoutDirection.current
+    val top = insets.getTop(density)
+    val left = insets.getLeft(density, direction)
+    val right = insets.getRight(density, direction)
+    val bleed = Modifier.layout { measurable, constraints ->
+        val placeable = measurable.measure(Constraints.fixed(constraints.maxWidth + left + right, constraints.maxHeight + top))
+        layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(-left, -top) }
+    }
+    Crossfade(targetState = flag, modifier = modifier.then(bleed), animationSpec = tween(CROSSFADE_MS), label = "flagWash") { shown ->
         if (shown != null) {
             Canvas(Modifier.fillMaxSize()) {
                 drawFlag(shown)
@@ -44,6 +70,14 @@ fun FlagWash(iso: String?, modifier: Modifier = Modifier) {
                     Brush.horizontalGradient(
                         0f to surface.copy(alpha = 1f - strength * HOIST_END_STRENGTH),
                         0.75f to surface.copy(alpha = 1f - strength),
+                    ),
+                )
+                // A second layer of surface over the lower part: what was left of the wash there drops to
+                // BOTTOM_STRENGTH of itself by the bottom edge.
+                drawRect(
+                    Brush.verticalGradient(
+                        0f to surface.copy(alpha = 0f),
+                        1f to surface.copy(alpha = 1f - BOTTOM_STRENGTH),
                     ),
                 )
             }
