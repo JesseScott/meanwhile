@@ -80,8 +80,8 @@
     <string name="recent_places_clear_label">Clear recent places</string>
 
     <!-- Main screen header. -->
-    <!-- Accessibility label for the settings icon, which opens the About screen. -->
-    <string name="header_open_about">About, privacy and licenses</string>
+    <!-- Accessibility label for the info icon, which opens the screen with the Settings and About tabs. -->
+    <string name="header_open_about">About and settings</string>
     <!-- The place shown is on the opposite side of the Earth from the user. %1$s is the local time there, such as "3:45 PM". -->
     <string name="header_opposite_you">Opposite you · %1$s there</string>
     <!-- The place shown is on the opposite side of the Earth from a searched place. %1$s is that place's name, %2$s is the local time there, such as "3:45 PM". -->
@@ -167,33 +167,45 @@
     <string name="intro_ocean_body">For most people that point is open water. You\'ll see the sea first, with a prompt to read headlines from the nearest land.</string>
     <string name="intro_keep_title">What we keep</string>
     <!-- A privacy promise: the location is not stored, and reports are off by default. "About" is the name of the About screen. -->
-    <string name="intro_keep_body">Meanwhile doesn\'t store your location, and there\'s no account. Usage and crash reports are off unless you turn them on under About, where you can also read the details.</string>
+    <string name="intro_keep_body">Meanwhile doesn\'t store your location, and there\'s no account. Usage and crash reports are off unless you turn them on in Settings (the info button at the top), where you can also read the details.</string>
     <string name="intro_continue">Continue</string>
     <string name="intro_search_instead">Search for a place instead</string>
 
     <!-- About screen. -->
     <!-- Accessibility label for the back arrow. -->
     <string name="about_back">Back</string>
-    <string name="about_title">About</string>
+    <!-- The two tabs of the About and settings screen. -->
+    <string name="about_tab_settings">Settings</string>
+    <string name="about_tab_about">About</string>
     <!-- %1$s is the app's version, such as "0.1.11"; %2$d is its build number, such as 11. -->
     <string name="about_version">Version %1$s (%2$d)</string>
     <!-- Shown in place of the version line when the version can't be read. -->
     <string name="about_version_unknown">Version unknown</string>
+    <string name="about_version_title">Version</string>
+    <!-- One-line summary under the Version heading. %1$s is the version, such as "0.1.12"; %2$d is the build number, such as 12. -->
+    <string name="about_version_summary">%1$s (%2$d)</string>
+    <string name="about_version_summary_unknown">Unknown</string>
+    <string name="about_meanwhile_title">About Meanwhile</string>
+    <string name="about_meanwhile_summary">A free hobby project by Jesse Scott</string>
     <string name="about_what_it_does">Meanwhile shows what\'s happening on the exact opposite side of the Earth from you: headlines from the country there, or from the nearest land when it\'s open sea.</string>
-    <string name="about_hobby">A free hobby project by Jesse Scott.</string>
     <string name="about_link_site" translatable="false">jesses.co.tt</string>
 
     <string name="about_location_title">Location</string>
     <string name="about_use_my_location">Use my location</string>
+    <!-- One-line summaries under the section headings, saying how things are set now. -->
+    <string name="about_summary_on">On</string>
+    <string name="about_summary_off">Off</string>
 
     <string name="about_appearance_title">Appearance</string>
     <string name="about_flag_wash_title">Flag behind the header</string>
+    <string name="about_appearance_summary_on">Flag behind the header is on</string>
+    <string name="about_appearance_summary_off">Flag behind the header is off</string>
     <string name="about_flag_wash_detail">A faint wash of the country\'s flag colours</string>
 
     <!-- Accessibility: whether a foldable About section (such as Privacy) is open or folded. -->
     <string name="about_section_expanded">Expanded</string>
     <string name="about_section_collapsed">Collapsed</string>
-    <string name="about_sources_title">Where the data comes from</string>
+    <string name="about_sources_title">Where the news comes from</string>
     <!-- Names of projects, services and licences in this section are not translated. -->
     <string name="about_sources_headlines">Headlines: the GDELT Project (gdeltproject.org), a free, open database of world news, plus a few public news feeds from local outlets. Meanwhile shows article titles only and links to the publishers\' own sites. Titles appear as published, in their original language, and GDELT can occasionally file an outlet under the wrong country.</string>
     <string name="about_link_gdelt" translatable="false">GDELT Project</string>
@@ -205,6 +217,8 @@
     <string name="about_sources_places">Place lookup: your device\'s built-in geocoder. Location: Google Play services.</string>
 
     <string name="about_privacy_title">Privacy</string>
+    <string name="about_privacy_summary_on">Usage and crash reports are on</string>
+    <string name="about_privacy_summary_off">Usage and crash reports are off</string>
     <!-- The privacy bullets below are promises to the user, and they match the privacy policy on jesses.co.tt.
          Translate them closely: do not strengthen, weaken or leave out any statement. -->
     <!-- Promises: approximate location only, not stored, no accounts. -->
@@ -222,7 +236,16 @@
     <string name="about_link_privacy_policy">Privacy policy</string>
     <string name="about_link_firebase">How Firebase handles data</string>
 
-    <string name="about_feedback_title">Feedback</string>
+    <!-- Google Play needs this section to be clearly labelled as a way to contact the developer. -->
+    <string name="about_contact_title">Contact us</string>
+    <string name="about_contact_summary">Email or a short feedback form</string>
+    <string name="about_contact_body">Questions, ideas, or a headline that looks wrong? Email me, or use the short form below.</string>
+    <!-- Label above the contact email address, which opens the mail app. -->
+    <string name="about_contact_email_label">Email</string>
+    <!-- Accessibility: what tapping the email address does. -->
+    <string name="about_contact_email_action">Write an email</string>
+    <!-- Shown when the phone has no mail app; the address has been copied instead. -->
+    <string name="about_contact_no_mail_app">No mail app found, so the address is copied.</string>
     <!-- "It sends only" is a promise: the form gets what the tester types plus the two pre-filled answers. -->
     <string name="about_feedback_body">Found something confusing, slow or broken, or something you liked? Tell me through a short form. It sends only what you type, plus the app version and phone model.</string>
     <string name="about_feedback_button">Send feedback</string>
