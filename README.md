@@ -8,8 +8,6 @@ News from the other side of the world.
 
 Meanwhile finds the point exactly opposite you on Earth, your antipode, and shows what is happening there: headlines from that country. If the point is open water (and for most people it is), it opens on the sea itself instead, with live wave, swell, water temperature and current readings, and offers the headlines from the nearest land.
 
-It is a free Android app with no ads and no account. It is not on Google Play yet.
-
 <p align="center">
   <img src="docs/screenshots/headlines.png" alt="Headlines from New Zealand, opposite Madrid" width="230">
   <img src="docs/screenshots/headlines-dark.png" alt="The same screen in dark mode" width="230">
