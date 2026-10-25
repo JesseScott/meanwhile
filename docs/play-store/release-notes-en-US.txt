@@ -1,7 +1,7 @@
-Meanwhile 0.1.12 (build 12)
+Meanwhile 0.2.0 (build 13)
 
 Thanks for testing!
 
-New: the info button at the top opens Settings and About, now in two tabs with sections you can open and close. About has a Contact us section with an email address and a short feedback form. More local news for South Africa and Fiji.
+New: the search bar suggests places to try, and a one-time tooltip after your first load points you to it. The flag behind the header now runs up under the status bar and fades softly, and the search field stands out more. In landscape the header sits side by side, so the place and the search bar both fit, even with the keyboard open.
 
-Try: location, search, ocean and land, pull to refresh, dark mode.
+Try: search, landscape, dark mode, the flag behind the header.
