@@ -238,7 +238,6 @@
 
     <!-- Google Play needs this section to be clearly labelled as a way to contact the developer. -->
     <string name="about_contact_title">Contact us</string>
-    <string name="about_contact_summary">Email or a short feedback form</string>
     <string name="about_contact_body">Questions, ideas, or a headline that looks wrong?</string>
     <!-- Label above the contact email address, which opens the mail app. -->
     <string name="about_contact_email_label">Email</string>
