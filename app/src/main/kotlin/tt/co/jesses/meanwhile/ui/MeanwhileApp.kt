@@ -93,13 +93,28 @@ fun MeanwhileApp(viewModel: MainViewModel) {
         if (locationGranted && locationRefused == true) settings.setLocationRefused(false)
     }
 
+    var showAbout by rememberSaveable { mutableStateOf(false) }
+    // Location can come on while the About page is open (its "Turn on location" button, or a trip to system
+    // settings). Loading then would happen out of sight, with any snackbar landing on top of About, so the load
+    // waits until the user is back on the main screen.
+    var locationLoadPending by rememberSaveable { mutableStateOf(false) }
+    fun useMyLocation() {
+        if (showAbout) locationLoadPending = true else viewModel.onEvent(UiEvent.UseMyLocation)
+    }
+    LaunchedEffect(showAbout) {
+        if (!showAbout && locationLoadPending) {
+            locationLoadPending = false
+            viewModel.onEvent(UiEvent.UseMyLocation)
+        }
+    }
+
     var askedAt by remember { mutableLongStateOf(0L) }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         telemetry.log(TelemetryEvent.PermissionResult(granted))
         locationGranted = granted
         shouldExplain = shouldExplainLocation()
         if (granted) {
-            viewModel.onEvent(UiEvent.UseMyLocation)
+            useMyLocation()
         } else {
             val elapsed = SystemClock.elapsedRealtime() - askedAt
             if (LocationAccess.refusalCounts(shouldExplain, elapsed)) scope.launch { settings.setLocationRefused(true) }
@@ -111,7 +126,7 @@ fun MeanwhileApp(viewModel: MainViewModel) {
     }
     val useLocation = {
         when (locationAccess) {
-            LocationAccess.On -> viewModel.onEvent(UiEvent.UseMyLocation)
+            LocationAccess.On -> useMyLocation()
             LocationAccess.CanAsk -> {
                 askedAt = SystemClock.elapsedRealtime()
                 permission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
@@ -126,7 +141,7 @@ fun MeanwhileApp(viewModel: MainViewModel) {
         // Turned on in system settings: carry on as if the dialog had been answered yes, unless a place is showing.
         val current = viewModel.state.value
         if (locationGranted && !wasGranted && (current.status == Status.Idle || current.notice == UiNotice.LocationDenied)) {
-            viewModel.onEvent(UiEvent.UseMyLocation)
+            useMyLocation()
         }
         onPauseOrDispose { }
     }
@@ -141,11 +156,10 @@ fun MeanwhileApp(viewModel: MainViewModel) {
     val searchTipSeen by produceState(initialValue = true) { settings.searchTipSeen.collect { value = it } }
     var introDismissed by rememberSaveable { mutableStateOf(false) }
     val showIntro = introSeen == false && !introDismissed && !hasLocationPermission()
-    var showAbout by rememberSaveable { mutableStateOf(false) }
     BackHandler(enabled = showAbout) { showAbout = false }
 
     LaunchedEffect(Unit) {
-        if (hasLocationPermission() && viewModel.state.value.status == Status.Idle) viewModel.onEvent(UiEvent.UseMyLocation)
+        if (hasLocationPermission() && viewModel.state.value.status == Status.Idle) useMyLocation()
     }
 
     LaunchedEffect(viewModel) {
