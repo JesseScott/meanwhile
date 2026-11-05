@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.LinearProgressIndicator
@@ -156,6 +157,13 @@ fun MeanwhileScreen(
     // with nothing on it yet) offers the recently picked places at the top of the list.
     var query by rememberSaveable { mutableStateOf("") }
     var searchFocused by remember { mutableStateOf(false) }
+    // Search sits behind an icon in the header so it doesn't take a row of its own. The bar shows while it is open,
+    // while matches are showing, and when there is nothing else on screen (no place yet), where it's the way in.
+    var searchOpen by rememberSaveable { mutableStateOf(false) }
+    val nothingShowing = state.antipode == null && state.status != Status.Loading
+    val searchBarShown = searchOpen || state.searchResults.isNotEmpty() || nothingShowing
+    // Set when the icon or the tip opens the bar: the field only exists from the next frame, so focus waits for it.
+    var focusSearch by remember { mutableStateOf(false) }
     val showRecent = state.recentPlaces.isNotEmpty() && state.searchResults.isEmpty() && query.isEmpty() &&
         (searchFocused || state.status == Status.Idle)
     val listState = rememberLazyListState()
@@ -164,6 +172,25 @@ fun MeanwhileScreen(
     val searchFocus = remember { FocusRequester() }
     // Back closes the list of matches first; without this it would leave the app with the list still open.
     BackHandler(enabled = state.searchResults.isNotEmpty()) { onEvent(UiEvent.DismissPlaces) }
+    fun openSearch() {
+        searchOpen = true
+        focusSearch = true
+    }
+    fun closeSearch() {
+        query = ""
+        searchOpen = false
+        keyboard?.hide()
+        focus.clearFocus(force = true)
+    }
+    // Then Back closes the bar itself.
+    BackHandler(enabled = searchOpen && state.searchResults.isEmpty()) { closeSearch() }
+    LaunchedEffect(searchBarShown, focusSearch) {
+        if (searchBarShown && focusSearch) {
+            searchFocus.requestFocus()
+            keyboard?.show()
+            focusSearch = false
+        }
+    }
     // The list may be scrolled down when the bar is tapped; bring the recent places into view.
     LaunchedEffect(showRecent) { if (showRecent) listState.scrollToItem(0) }
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -191,7 +218,8 @@ fun MeanwhileScreen(
             // bar needs, so the cap never goes below the bar's own height plus the padding around it.
             val density = LocalDensity.current
             var searchBarHeight by remember { mutableStateOf(0.dp) }
-            val headerCap = maxOf(this@BoxWithConstraints.maxHeight * 0.5f, searchBarHeight + HEADER_PADDING_TOP + HEADER_PADDING_BOTTOM)
+            val barHeight = if (searchBarShown) searchBarHeight else 0.dp
+            val headerCap = maxOf(this@BoxWithConstraints.maxHeight * 0.5f, barHeight + HEADER_PADDING_TOP + HEADER_PADDING_BOTTOM)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -212,23 +240,42 @@ fun MeanwhileScreen(
                         SearchBar(
                             query = query,
                             onQueryChange = { query = it },
-                            onFocusChange = { searchFocused = it },
+                            onFocusChange = { focused ->
+                                // Tapping into the bar opens it; leaving it empty closes it again.
+                                if (focused) searchOpen = true
+                                else if (searchFocused && query.isEmpty() && state.searchResults.isEmpty()) searchOpen = false
+                                searchFocused = focused
+                            },
                             places = state.searchResults,
                             onSearch = { onEvent(UiEvent.Search(it)) },
-                            onPick = { onEvent(UiEvent.PickPlace(it)) },
+                            onPick = {
+                                closeSearch()
+                                onEvent(UiEvent.PickPlace(it))
+                            },
                             onDismissPlaces = { onEvent(UiEvent.DismissPlaces) },
-                            onUseLocation = onUseLocation,
+                            onClosePlaces = {
+                                closeSearch()
+                                onEvent(UiEvent.DismissPlaces)
+                            },
+                            onClose = if (searchOpen) ::closeSearch else null,
+                            onUseLocation = {
+                                closeSearch()
+                                onUseLocation()
+                            },
                             focusRequester = searchFocus,
                         )
                         }
                     }
-                    if (sideBySide) {
+                    val onOpenSearch = if (searchBarShown) null else ::openSearch
+                    // Nothing for the right-hand half when the bar is closed and there's no switch, so the header
+                    // takes the whole width rather than leaving half of it empty.
+                    if (sideBySide && (state.antipodeIsWater || searchBarShown)) {
                         Row(
                             modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-                                Header(state, compact = true, onOpenAbout = onOpenAbout)
+                                Header(state, compact = true, onOpenAbout = onOpenAbout, onOpenSearch = onOpenSearch, onUseLocation = onUseLocation)
                             }
                             // As in portrait, only the part above the bar scrolls, so the bar stays whole even with the
                             // keyboard open or the largest text.
@@ -241,7 +288,7 @@ fun MeanwhileScreen(
                                         ModeSwitch(state.mode) { onEvent(UiEvent.SetMode(it)) }
                                     }
                                 }
-                                searchBar()
+                                if (searchBarShown) searchBar()
                             }
                         }
                     } else {
@@ -249,10 +296,16 @@ fun MeanwhileScreen(
                             modifier = Modifier.fillMaxWidth().weight(1f, fill = false).verticalScroll(rememberScrollState()),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            Header(state, compact = shortScreen, onOpenAbout = onOpenAbout)
+                            Header(
+                                state,
+                                compact = shortScreen || sideBySide,
+                                onOpenAbout = onOpenAbout,
+                                onOpenSearch = onOpenSearch,
+                                onUseLocation = onUseLocation,
+                            )
                             if (state.antipodeIsWater) ModeSwitch(state.mode) { onEvent(UiEvent.SetMode(it)) }
                         }
-                        searchBar()
+                        if (searchBarShown) searchBar()
                     }
                 }
             }
@@ -280,8 +333,7 @@ fun MeanwhileScreen(
                     RecentPlaces(
                         places = state.recentPlaces,
                         onPick = {
-                            keyboard?.hide()
-                            focus.clearFocus(force = true)
+                            closeSearch()
                             onEvent(UiEvent.PickPlace(it))
                         },
                         onClear = { onEvent(UiEvent.ClearRecentPlaces) },
@@ -292,8 +344,7 @@ fun MeanwhileScreen(
                     SearchTip(
                         onUse = {
                             onSearchTipDone()
-                            searchFocus.requestFocus()
-                            keyboard?.show()
+                            openSearch()
                         },
                         onClose = onSearchTipDone,
                     )
@@ -423,6 +474,8 @@ private fun SearchBar(
     onSearch: (String) -> Unit,
     onPick: (NamedPlace) -> Unit,
     onDismissPlaces: () -> Unit,
+    onClosePlaces: () -> Unit,
+    onClose: (() -> Unit)?,
     onUseLocation: () -> Unit,
     focusRequester: FocusRequester,
 ) {
@@ -458,7 +511,16 @@ private fun SearchBar(
                     overflow = TextOverflow.Ellipsis,
                 )
             },
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+            // Once opened from the header, the leading icon closes it again, as Back does.
+            leadingIcon = {
+                if (onClose != null) {
+                    IconButton(onClick = onClose) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.search_close))
+                    }
+                } else {
+                    Icon(Icons.Filled.Search, contentDescription = null)
+                }
+            },
             trailingIcon = {
                 Row {
                     if (query.isNotEmpty()) {
@@ -467,12 +529,7 @@ private fun SearchBar(
                             onDismissPlaces()
                         }) { Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.search_clear)) }
                     }
-                    IconButton(onClick = {
-                        onQueryChange("")
-                        keyboard?.hide()
-                        focus.clearFocus()
-                        onUseLocation()
-                    }) { Icon(MyLocationIcon, contentDescription = stringResource(R.string.search_use_my_location)) }
+                    IconButton(onClick = onUseLocation) { Icon(MyLocationIcon, contentDescription = stringResource(R.string.search_use_my_location)) }
                 }
             },
             singleLine = true,
@@ -494,7 +551,7 @@ private fun SearchBar(
         // Not focusable, so showing the matches doesn't steal focus or close the keyboard from under the user.
         DropdownMenu(
             expanded = places.isNotEmpty(),
-            onDismissRequest = onDismissPlaces,
+            onDismissRequest = onClosePlaces,
             modifier = Modifier.width(barWidth),
             properties = PopupProperties(focusable = false),
         ) {
@@ -608,7 +665,13 @@ private val MyLocationIcon: ImageVector by lazy {
 }
 
 @Composable
-private fun Header(state: UiState, compact: Boolean, onOpenAbout: () -> Unit) {
+private fun Header(
+    state: UiState,
+    compact: Boolean,
+    onOpenAbout: () -> Unit,
+    onOpenSearch: (() -> Unit)?,
+    onUseLocation: () -> Unit,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         // The info icon shares the title's row, so it lines up with "Meanwhile" and not with the middle of the
         // title and tagline together. The tagline sits under the whole row.
@@ -618,8 +681,16 @@ private fun Header(state: UiState, compact: Boolean, onOpenAbout: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            IconButton(onClick = onOpenAbout) {
-                Icon(Icons.Outlined.Info, contentDescription = stringResource(R.string.header_open_about))
+            Row {
+                // Null while the search bar is showing, which already says what this would do.
+                if (onOpenSearch != null) {
+                    IconButton(onClick = onOpenSearch) {
+                        Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.search_placeholder))
+                    }
+                }
+                IconButton(onClick = onOpenAbout) {
+                    Icon(Icons.Outlined.Info, contentDescription = stringResource(R.string.header_open_about))
+                }
             }
         }
         if (!compact) {
@@ -658,6 +729,22 @@ private fun Header(state: UiState, compact: Boolean, onOpenAbout: () -> Unit) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            // After a search, the way back to the user's own opposite side, right under the place it replaces.
+            if (place != null) {
+                TextButton(
+                    onClick = onUseLocation,
+                    contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
+                    modifier = Modifier.heightIn(min = 48.dp),
+                ) {
+                    Icon(MyLocationIcon, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(
+                        stringResource(R.string.header_back_to_my_location),
+                        modifier = Modifier.padding(start = 8.dp),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
             if (country.distanceKm > 0) {
                 Text(
                     openWaterNote(country),
