@@ -1,7 +1,7 @@
-Meanwhile 0.2.0 (build 13)
+Meanwhile 0.3.0 (build 14)
 
 Thanks for testing!
 
-New: the search bar suggests places to try, and a one-time tooltip after your first load points you to it. The flag behind the header now runs up under the status bar and fades softly, and the search field stands out more. In landscape the header sits side by side, so the place and the search bar both fit, even with the keyboard open.
+New: search is now an icon in the header, so the headlines get more room. Tap it to search; the bar closes once you pick a place. After a search, "Back to my location" takes you home in one tap. Fixed: turning location on from Settings no longer loads behind it; the load starts when you return to the main screen.
 
-Try: search, landscape, dark mode, the flag behind the header.
+Try: search, getting back to your location, turning location on from Settings.
