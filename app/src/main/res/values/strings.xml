@@ -83,12 +83,14 @@
         <item>Manila</item>
         <item>Singapore</item>
     </string-array>
-    <!-- A one-time tip at the top of the list, after the first headlines from the phone's location. Tapping it puts the cursor in the search bar. -->
+    <!-- A one-time tip at the top of the list, after the first headlines from the phone's location. Tapping it opens the search bar. -->
     <string name="search_tip">Curious about somewhere else? Search any place to see its opposite side.</string>
     <!-- Accessibility label for the button that closes the search tip. -->
     <string name="search_tip_close">Close tip</string>
     <!-- Accessibility label for the button that empties the search bar. -->
     <string name="search_clear">Clear</string>
+    <!-- Accessibility label for the arrow that closes the search bar after it was opened from the header's search icon. -->
+    <string name="search_close">Close search</string>
     <!-- Accessibility label for the button that uses the phone's location. -->
     <string name="search_use_my_location">Use my location</string>
     <string name="recent_places_title">Recent places</string>
@@ -104,6 +106,8 @@
     <string name="header_opposite_you">Opposite you · %1$s there</string>
     <!-- The place shown is on the opposite side of the Earth from a searched place. %1$s is that place's name, %2$s is the local time there, such as "3:45 PM". -->
     <string name="header_opposite_place">Opposite %1$s · %2$s there</string>
+    <!-- Under the place line after a search: goes back to the place opposite the user's own location. -->
+    <string name="header_back_to_my_location">Back to my location</string>
     <!-- The opposite point is at sea. %1$s is a country name, %2$s is a rounded distance, already formatted, such as "1,200". -->
     <string name="header_open_water_note">Open water. Nearest land: %1$s, about %2$s km away.</string>
 
